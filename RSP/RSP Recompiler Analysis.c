@@ -581,8 +581,8 @@ static BOOL WriteToVectorDest2 (DWORD DestReg, int PC, BOOL RecursiveCall) {
 			break;
 		case RSP_ADDI:
 		case RSP_ADDIU:
-		/*case RSP_SLTI:
-		case RSP_SLTIU:*/
+		case RSP_SLTI:
+		/*case RSP_SLTIU:*/
 		case RSP_ANDI:
 		case RSP_ORI:
 		case RSP_XORI:
@@ -812,9 +812,7 @@ static BOOL WriteToVectorDest2 (DWORD DestReg, int PC, BOOL RecursiveCall) {
 				return TRUE;
 			} else {
 				/* otherwise this is completely valid */
-/*				return BranchTaken;*/
-				LogMessage("TODO: WriteToVectorDest2 take branch, forward, branch taken doesn't hit branch");
-				return FALSE;
+				return BranchTaken;
 			}
 		}
 	} else {
