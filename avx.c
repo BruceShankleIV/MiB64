@@ -643,6 +643,36 @@ void AvxVPMovesxWordReg128ToDwordReg256(BYTE** code, int Dest, int Source) {
 	PUTDST8(*code, 0xc0 | x86Command);
 }
 
+void AvxVPMovezxWordReg128ToDwordReg256(BYTE** code, int Dest, int Source) {
+	BYTE x86Command = 0;
+
+	RSP_CPU_Message("      vpmovzxwd %s, %s", avx_Name(Dest), sse_Name(Source));
+
+	switch (Dest) {
+	case x86_YMM0: x86Command = 0 << 3; break;
+	case x86_YMM1: x86Command = 1 << 3; break;
+	case x86_YMM2: x86Command = 2 << 3; break;
+	case x86_YMM3: x86Command = 3 << 3; break;
+	case x86_YMM4: x86Command = 4 << 3; break;
+	case x86_YMM5: x86Command = 5 << 3; break;
+	case x86_YMM6: x86Command = 6 << 3; break;
+	case x86_YMM7: x86Command = 7 << 3; break;
+	}
+	switch (Source) {
+	case x86_XMM0: x86Command |= 0; break;
+	case x86_XMM1: x86Command |= 1; break;
+	case x86_XMM2: x86Command |= 2; break;
+	case x86_XMM3: x86Command |= 3; break;
+	case x86_XMM4: x86Command |= 4; break;
+	case x86_XMM5: x86Command |= 5; break;
+	case x86_XMM6: x86Command |= 6; break;
+	case x86_XMM7: x86Command |= 7; break;
+	}
+
+	PUTDST32(*code, 0x337de2c4);
+	PUTDST8(*code, 0xc0 | x86Command);
+}
+
 void AvxVPMulldRegToReg256(BYTE** code, int Dest, int Src1, int Src2) {
 	BYTE x86Command = 0;
 	BYTE x86Src1 = 0;

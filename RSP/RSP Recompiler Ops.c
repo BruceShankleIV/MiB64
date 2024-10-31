@@ -6919,9 +6919,9 @@ static BOOL Compile_Vector_VMADM_AVX(BOOL writeToVectorDest, BOOL writeToAccum) 
 	SseMoveAlignedVariableToReg(&RspRecompPos, &RSP_ACCUM_LOW.UHW[0], "RSP_ACCUM_LOW", x86_XMM3, SseType_QuadWord, TRUE);
 	AvxVPAddwRegToReg128(&RspRecompPos, x86_XMM4, x86_XMM3, x86_XMM2);
 
-	/*if (writeToAccum) {
+	if (writeToAccum) {
 		SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM4, &RSP_ACCUM_LOW.UHW[0], "RSP_ACCUM_LOW", SseType_QuadWord, TRUE);
-	}*/
+	}
 
 	/* compute carry in xmm3 */
 	Sse2PadduswRegToReg(&RspRecompPos, x86_XMM3, x86_XMM2);
@@ -6929,16 +6929,6 @@ static BOOL Compile_Vector_VMADM_AVX(BOOL writeToVectorDest, BOOL writeToAccum) 
 	Sse2CompareEqualDWordRegToReg(&RspRecompPos, x86_XMM7, x86_XMM7);
 	Sse2PxorRegToReg(&RspRecompPos, x86_XMM3, x86_XMM7);
 	Sse2PsrlwImmed(&RspRecompPos, x86_XMM3, 15);
-
-	/* low((a >> 15) * b) */
-	AvxVPSrawRegToReg128Immed(&RspRecompPos, x86_XMM2, x86_XMM0, 15);
-	Sse2PmullwRegToReg(&RspRecompPos, x86_XMM2, x86_XMM1);
-
-	/* high((u16)a * b) */
-	Sse2PmulhuwRegToReg(&RspRecompPos, x86_XMM0, x86_XMM1);
-
-	/* Add them up */
-	Sse2PaddwRegToReg(&RspRecompPos, x86_XMM0, x86_XMM2);
 
 	// 4 is high|mid
 	SseMoveAlignedVariableToReg(&RspRecompPos, &RSP_ACCUM_HIGH.UHW[0], "RSP_ACCUM_HIGH", x86_XMM6, SseType_QuadWord, TRUE);
@@ -6952,32 +6942,24 @@ static BOOL Compile_Vector_VMADM_AVX(BOOL writeToVectorDest, BOOL writeToAccum) 
 	AvxVPAdddRegToReg256(&RspRecompPos, x86_YMM4, x86_YMM4, x86_YMM6);
 
 	// add high mul
-	AvxVPMovesxWordReg128ToDwordReg256(&RspRecompPos, x86_YMM6, x86_XMM0);
+	AvxVPMovesxWordReg128ToDwordReg256(&RspRecompPos, x86_YMM0, x86_XMM0);
+	AvxVPMovezxWordReg128ToDwordReg256(&RspRecompPos, x86_YMM1, x86_XMM1);
+	AvxVPMulldRegToReg256(&RspRecompPos, x86_YMM0, x86_YMM0, x86_YMM1);
+	AvxVPSradRegToReg256Immed(&RspRecompPos, x86_YMM0, x86_YMM0, 16);
 	AvxVPAdddRegToReg256(&RspRecompPos, x86_YMM4, x86_YMM4, x86_YMM0);
 
-	/*if (writeToAccum) {
-		SseMoveRegToReg(&RspRecompPos, x86_XMM6, x86_XMM4, SseType_QuadWord, TRUE);
-		SseMoveRegToReg(&RspRecompPos, x86_XMM7, x86_XMM5, SseType_QuadWord, TRUE);
-		Sse2PslldImmed(&RspRecompPos, x86_XMM6, 16);
-		Sse2PslldImmed(&RspRecompPos, x86_XMM7, 16);
-		Sse2PsradImmed(&RspRecompPos, x86_XMM6, 16);
-		Sse2PsradImmed(&RspRecompPos, x86_XMM7, 16);
-		Sse2PackSignedDWordRegToWordReg(&RspRecompPos, x86_XMM6, x86_XMM7);
+	if (writeToAccum) {
+		AvxVPSlldRegToReg256Immed(&RspRecompPos, x86_YMM6, x86_YMM4, 16);
+		AvxVPSradRegToReg256Immed(&RspRecompPos, x86_YMM6, x86_YMM6, 16);
+		AvxVExtracti128RegToReg(&RspRecompPos, x86_XMM7, x86_YMM6, TRUE);
+		AvxVPackSignedDWordRegToWordReg128(&RspRecompPos, x86_XMM6, x86_XMM6, x86_XMM7);
 		SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM6, &RSP_ACCUM_MID.UHW[0], "RSP_ACCUM_MID", SseType_QuadWord, TRUE);
 
-		int reg1 = x86_XMM4;
-		int reg2 = x86_XMM5;
-		if (writeToVectorDest) {
-			SseMoveRegToReg(&RspRecompPos, x86_XMM6, x86_XMM4, SseType_QuadWord, TRUE);
-			SseMoveRegToReg(&RspRecompPos, x86_XMM7, x86_XMM5, SseType_QuadWord, TRUE);
-			reg1 = x86_XMM6;
-			reg2 = x86_XMM7;
-		}
-		Sse2PsradImmed(&RspRecompPos, reg1, 16);
-		Sse2PsradImmed(&RspRecompPos, reg2, 16);
-		Sse2PackSignedDWordRegToWordReg(&RspRecompPos, reg1, reg2);
-		SseMoveAlignedRegToVariable(&RspRecompPos, reg1, &RSP_ACCUM_HIGH.UHW[0], "RSP_ACCUM_HIGH", SseType_QuadWord, TRUE);
-	}*/
+		AvxVPSradRegToReg256Immed(&RspRecompPos, x86_YMM6, x86_YMM4, 16);
+		AvxVExtracti128RegToReg(&RspRecompPos, x86_XMM7, x86_YMM6, TRUE);
+		AvxVPackSignedDWordRegToWordReg128(&RspRecompPos, x86_XMM6, x86_XMM6, x86_XMM7);
+		SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM6, &RSP_ACCUM_HIGH.UHW[0], "RSP_ACCUM_HIGH", SseType_QuadWord, TRUE);
+	}
 
 	if (writeToVectorDest) {
 		AvxVExtracti128RegToReg(&RspRecompPos, x86_XMM5, x86_YMM4, TRUE);
@@ -7007,9 +6989,9 @@ void CompileRsp_Vector_VMADM ( void ) {
 		return;
 	}
 
-	/*if (TRUE == Compile_Vector_VMADM_AVX(bWriteToDest, bWriteToAccum)) {
+	if (TRUE == Compile_Vector_VMADM_AVX(bWriteToDest, bWriteToAccum)) {
 		return;
-	}*/
+	}
 
 	if (TRUE == Compile_Vector_VMADM_SSE2(bWriteToDest, bWriteToAccum)) {
 		return;

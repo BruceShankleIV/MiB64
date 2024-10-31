@@ -466,6 +466,7 @@ void AvxVPBroadcastdVariableToReg256( BYTE** code, int Dest, void * Variable, ch
 void AvxVPBroadcastwVariableToReg128( BYTE** code, int Dest, void * Variable, char * VariableName );
 void AvxVPMovesxWordReg128ToDwordReg256( BYTE** code, int Dest, int Source );
 void AvxVPMovesxWordVariableToDWordReg256( BYTE** code, int Dest, void * Variable, char * VariableName );
+void AvxVPMovezxWordReg128ToDwordReg256( BYTE** code, int Dest, int Source );
 void AvxVPMulldRegToReg256			( BYTE** code, int Dest, int Src1, int Src2 );
 void AvxVPMullwRegToReg128          ( BYTE** code, int Dest, int Src1, int Src2 );
 void AvxVPorRegToReg256				( BYTE** code, int Dest, int Src1, int Src2 );
