@@ -2772,6 +2772,37 @@ void MoveX86RegToX86Reg(BYTE** code, int Source, int Destination) {
 	PUTDST16(*code,x86Command);
 }
 
+void MoveX86RegToX86RegHalf(BYTE** code, int Source, int Destination) {
+	WORD x86Command = 0x0;
+
+	CPU_OR_RSP_Message(*code, "      mov %s, %s", x86Half_Name(Destination), x86Half_Name(Source));
+
+	PUTDST8(*code, 0x66);
+	switch (Destination) {
+		\
+	case x86_EAX: x86Command = 0x0089; break;
+	case x86_EBX: x86Command = 0x0389; break;
+	case x86_ECX: x86Command = 0x0189; break;
+	case x86_EDX: x86Command = 0x0289; break;
+	case x86_ESI: x86Command = 0x0689; break;
+	case x86_EDI: x86Command = 0x0789; break;
+	case x86_ESP: x86Command = 0x0489; break;
+	case x86_EBP: x86Command = 0x0589; break;
+	}
+
+	switch (Source) {
+	case x86_EAX: x86Command += 0xC000; break;
+	case x86_EBX: x86Command += 0xD800; break;
+	case x86_ECX: x86Command += 0xC800; break;
+	case x86_EDX: x86Command += 0xD000; break;
+	case x86_ESI: x86Command += 0xF000; break;
+	case x86_EDI: x86Command += 0xF800; break;
+	case x86_ESP: x86Command += 0xE000; break;
+	case x86_EBP: x86Command += 0xE800; break;
+	}
+	PUTDST16(*code, x86Command);
+}
+
 void MoveX86regToX86Pointer(BYTE** code, int x86reg, int X86Pointer) {
 	WORD x86Command = 0x0;
 
