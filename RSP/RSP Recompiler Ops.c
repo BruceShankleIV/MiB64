@@ -88,7 +88,7 @@ DWORD BeginOfCurrentSubBlock = 0;
 #	define CompileVmudl	/* Verified 12/17/2000 - Jabo */
 #	define CompileVmadl	
 #	define CompileVmadm	/* Verified 12/17/2000 - Jabo */
-/*#	define CompileVmadh*/	/* Verified 12/15/2000 - Jabo */
+#	define CompileVmadh	/* Verified 12/15/2000 - Jabo */
 #	define CompileVmadn	/* Verified 12/17/2000 - Jabo */
 #endif
 /*#ifdef RSP_VectorMisc
@@ -3952,7 +3952,7 @@ static BOOL Compile_Vector_VRNDP_AVX(BOOL writeToVectorDest, BOOL writeToAccum) 
 	char Reg[256];
 
 	/* Do our AVX checks here */
-	if (IsAvxEnabled == FALSE || IsAvx2Enabled == FALSE || IsSse2Enabled == FALSE)
+	if (IsAvxEnabled == FALSE || IsAvx2Enabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
 		return FALSE;
 
 	// load vs and vt
@@ -4637,7 +4637,7 @@ static BOOL Compile_Vector_VMUDM_AVX(BOOL writeToVectorDest, BOOL writeToAccum) 
 	char Reg[256];
 
 	/* Do our SSE checks here */
-	if (IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
+	if (IsAvxEnabled == FALSE || IsAvx2Enabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
 		return FALSE;
 
 	sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vs);
@@ -4880,7 +4880,7 @@ static BOOL Compile_Vector_VMUDN_AVX(BOOL writeToVectorDest) {
 	char Reg[256];
 
 	/* Do our SSE checks here */
-	if (IsAvxEnabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
+	if (IsAvxEnabled == FALSE || IsAvx2Enabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
 		return FALSE;
 
 	sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vs);
@@ -5114,7 +5114,7 @@ static BOOL Compile_Vector_VMUDH_NoAccum_AVX() {
 	char Reg[256];
 
 	/* Do our AVX checks here */
-	if (IsAvxEnabled == FALSE  || IsAvx2Enabled == FALSE || IsSseEnabled == FALSE)
+	if (IsAvxEnabled == FALSE  || IsAvx2Enabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
 		return FALSE;
 
 	sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vs);
@@ -5148,7 +5148,7 @@ static BOOL Compile_Vector_VMUDH_AVX(BOOL writeToVectorDest) {
 	char Reg[256];
 
 	/* Do our SSE checks here */
-	if (IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
+	if (IsAvxEnabled == FALSE || IsAvx2Enabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
 		return FALSE;
 
 	sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vs);
@@ -6083,7 +6083,7 @@ static BOOL Compile_Vector_VRNDN_AVX(BOOL writeToVectorDest, BOOL writeToAccum) 
 	char Reg[256];
 
 	/* Do our AVX checks here */
-	if (IsAvxEnabled == FALSE || IsAvx2Enabled == FALSE || IsSse2Enabled == FALSE)
+	if (IsAvxEnabled == FALSE || IsAvx2Enabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
 		return FALSE;
 
 	// load vs and vt
@@ -6896,7 +6896,7 @@ static BOOL Compile_Vector_VMADM_AVX(BOOL writeToVectorDest, BOOL writeToAccum) 
 	char Reg[256];
 
 	/* Do our SSE checks here */
-	if (IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
+	if (IsAvxEnabled == FALSE || IsAvx2Enabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
 		return FALSE;
 
 	// load vs and vt
@@ -7218,7 +7218,7 @@ static BOOL Compile_Vector_VMADN_AVX(BOOL writeToVectorDest, BOOL writeToAccum) 
 	char Reg[256];
 
 	/* Do our SSE checks here */
-	if (IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
+	if (IsAvxEnabled == FALSE || IsAvx2Enabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
 		return FALSE;
 
 	// load vs and vt
@@ -7410,33 +7410,33 @@ void CompileRsp_Vector_VMADN ( void ) {
 }
 
 void CompileRsp_Vector_VMADH ( void ) {
-	/*char Reg[256];
+	char Reg[256];
 	int count, el, del;
 
-	BOOL bOptimize = ((RSPOpC.rs & 0x0f) >= 8) ? TRUE : FALSE;
+	/*BOOL bOptimize = ((RSPOpC.rs & 0x0f) >= 8) ? TRUE : FALSE;
 	BOOL bWriteToDest = WriteToVectorDest(RSPOpC.sa, CompilePC);*/
 
 	#ifndef CompileVmadh
 	InterpreterFallback((void*)RSP_Vector_VMADH,"RSP_Vector_VMADH"); return;
 	#endif
 
-	/*CPU_Message("  %X %s",CompilePC,RSPOpcodeName(RSPOpC.Hex,CompilePC));
+	RSP_CPU_Message("  %X %s",RspCompilePC,RSPOpcodeName(RSPOpC.OP.Hex,RspCompilePC));
 
-	if (bOptimize == TRUE) {
+	/*if (bOptimize == TRUE) {
 		del = (RSPOpC.rs & 0x07) ^ 7;
 		sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.rt, del);
 		MoveSxVariableToX86regHalf(&RSP_Vect[RSPOpC.rt].HW[del], Reg, x86_EBX);
 	} 
 	
-	if (bWriteToDest == TRUE) {*/
+	if (bWriteToDest == TRUE)*/ {
 		/*
 		 * Prepare for conditional moves
 		 */
-/*		MoveConstToX86reg(0x00007fff, x86_ESI);
-		MoveConstToX86reg(0xFFFF8000, x86_EDI);
+		MoveConstToX86reg(&RspRecompPos, 0x00007fff, x86_ESI);
+		MoveConstToX86reg(&RspRecompPos, 0xFFFF8000, x86_EDI);
 	}
 
-	if (bWriteToDest == FALSE && bOptimize == TRUE) {
+	/*if (bWriteToDest == FALSE && bOptimize == TRUE) {
 		Push(x86_EBP);
 		sprintf(Reg, "RSP_Vect[%i].HW[0]", RSPOpC.rd);
 		MoveOffsetToX86reg((DWORD)&RSP_Vect[RSPOpC.rd].HW[0], Reg, x86_EBP);*/
@@ -7486,8 +7486,8 @@ void CompileRsp_Vector_VMADH ( void ) {
 		AddX86regToVariable(x86_ESI, &RSP_ACCUM[7].W[1], Reg);
 
 		Pop(x86_EBP);
-	} else {
-		Push(x86_EBP);
+	} else*/ {
+		/*Push(x86_EBP);
 		sprintf(Reg, "RSP_Vect[%i].HW[0]", RSPOpC.rd);
 		MoveOffsetToX86reg((DWORD)&RSP_Vect[RSPOpC.rd].HW[0], Reg, x86_EBP);
 
@@ -7497,46 +7497,62 @@ void CompileRsp_Vector_VMADH ( void ) {
 		} else if (!bOptimize) {
 			sprintf(Reg, "RSP_Vect[%i].HW[0]", RSPOpC.rt);
 			MoveOffsetToX86reg((DWORD)&RSP_Vect[RSPOpC.rt].HW[0], Reg, x86_ECX);
-		}
+		}*/
 
 		for (count = 0; count < 8; count++) {
-			CPU_Message("     Iteration: %i", count);
-			el = Indx[RSPOpC.rs].B[count];
-			del = EleSpec[RSPOpC.rs].B[el];*/
+			RSP_CPU_Message("     Iteration: %i", count);
+			el = Indx[RSPOpC.OP.V.element].B[count];
+			del = EleSpec[RSPOpC.OP.V.element].B[el];
 
-			/*sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.rd, el);
-			MoveSxVariableToX86regHalf(&RSP_Vect[RSPOpC.rd].HW[el], Reg, x86_EAX);*/
+			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vs, el);
+			MoveSxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vs].HW[el], Reg, x86_EAX);
 /*			MoveSxX86RegPtrDispToX86RegHalf(x86_EBP, el * 2, x86_EAX);
 
-			if (bOptimize == FALSE) {
-				if (bWriteToDest == TRUE) {
-					sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.rt, del);
-					MoveSxVariableToX86regHalf(&RSP_Vect[RSPOpC.rt].HW[del], Reg, x86_EBX);
-				} else {
+			if (bOptimize == FALSE)*/ {
+				/*if (bWriteToDest == TRUE)*/ {
+					sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vt, del);
+					MoveSxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vt].HW[del], Reg, x86_EBX);
+				} /*else {
 					MoveSxX86RegPtrDispToX86RegHalf(x86_ECX, del * 2, x86_EBX);
-				}
+				}*/
 			}
 
-			imulX86reg(x86_EBX);
-			sprintf(Reg, "RSP_ACCUM[%i].W[1]", el);
-			AddX86regToVariable(x86_EAX, &RSP_ACCUM[el].W[1], Reg);
+			imulX86reg(&RspRecompPos, x86_EBX);
+			//if (accum && !dest) {
+				/*sprintf(Reg, "RSP_ACCUM[%i].W[1]", el);
+				AddX86regToVariable(x86_EAX, &RSP_ACCUM[el].W[1], Reg);*/
+			/*} else*/ {
+				MoveX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_EDX);
+				ShiftRightSignImmed(&RspRecompPos, x86_EAX, 16);
+				sprintf(Reg, "RSP_ACCUM_MID.UHW[%d]", el);
+				AddVariableToX86regHalf(&RspRecompPos, x86_EDX, &RSP_ACCUM_MID.UHW[el], Reg);
+				sprintf(Reg, "RSP_ACCUM_HIGH.UHW[%d]", el);
+				AdcVariableToX86regHalf(&RspRecompPos, x86_EAX, &RSP_ACCUM_HIGH.UHW[el], Reg);
 
-			if (bWriteToDest == TRUE) {
-				MoveVariableToX86reg(&RSP_ACCUM[el].W[1], "RSP_ACCUM[el].W[1]", x86_EAX);
+				/*if (accum) {*/
+				sprintf(Reg, "RSP_ACCUM_MID.UHW[%d]", el);
+				MoveX86regHalfToVariable(&RspRecompPos, x86_EDX, &RSP_ACCUM_MID.UHW[el], Reg);
+				sprintf(Reg, "RSP_ACCUM_HIGH.UHW[%d]", el);
+				MoveX86regHalfToVariable(&RspRecompPos, x86_EAX, &RSP_ACCUM_HIGH.UHW[el], Reg);
+				/*}*/
+			}
 
-				CompX86RegToX86Reg(x86_EAX, x86_ESI);
-				CondMoveGreater(x86_EAX, x86_ESI);
-				CompX86RegToX86Reg(x86_EAX, x86_EDI);
-				CondMoveLess(x86_EAX, x86_EDI);*/
+			/*if (bWriteToDest == TRUE)*/ {
+				ShiftLeftSignImmed(&RspRecompPos, x86_EAX, 16);
+				MoveX86RegToX86RegHalf(&RspRecompPos, x86_EDX, x86_EAX);
 
-				/*sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.sa, el);
-				MoveX86regHalfToVariable(x86_EAX, &RSP_Vect[RSPOpC.sa].HW[el], Reg);*/
-/*				MoveX86regHalfToX86regPointerDisp(x86_EAX, x86_ECX, el * 2);
+				CompX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_ESI);
+				CondMoveGreater(&RspRecompPos, x86_EAX, x86_ESI);
+				CompX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_EDI);
+				CondMoveLess(&RspRecompPos, x86_EAX, x86_EDI);
+
+				sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vd, el);
+				MoveX86regHalfToVariable(&RspRecompPos, x86_EAX, &RSP_Vect[RSPOpC.OP.V.vd].HW[el], Reg);
+/*				MoveX86regHalfToX86regPointerDisp(x86_EAX, x86_ECX, el * 2);*/
 			}
 		}
-		Pop(x86_EBP);
-	}*/
-	LogMessage("TODO: CompileRsp_Vector_VMADH");
+		/*Pop(x86_EBP);*/
+	}
 }
 
 /*BOOL Compile_Vector_VADD_MMX ( void ) {
