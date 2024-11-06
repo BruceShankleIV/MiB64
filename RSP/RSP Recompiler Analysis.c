@@ -189,16 +189,16 @@ static DWORD WriteToAccum2 (int Location, int PC, BOOL RecursiveCall) {
 			case RSP_SPECIAL_SRL:
 			case RSP_SPECIAL_SRA:
 			case RSP_SPECIAL_SLLV:
-			/*case RSP_SPECIAL_SRLV:
-			case RSP_SPECIAL_SRAV:*/
+			case RSP_SPECIAL_SRLV:
+			/*case RSP_SPECIAL_SRAV:*/
 			case RSP_SPECIAL_ADD:
 			case RSP_SPECIAL_ADDU:
 			case RSP_SPECIAL_SUB:
 			/*case RSP_SPECIAL_SUBU:*/
 			case RSP_SPECIAL_AND:
 			case RSP_SPECIAL_OR:
-			/*case RSP_SPECIAL_XOR:
-			case RSP_SPECIAL_NOR:*/
+			case RSP_SPECIAL_XOR:
+			/*case RSP_SPECIAL_NOR:*/
 			case RSP_SPECIAL_SLT:
 			/*case RSP_SPECIAL_SLTU:*/
 				break;
@@ -311,8 +311,9 @@ static DWORD WriteToAccum2 (int Location, int PC, BOOL RecursiveCall) {
 				case RSP_VECTOR_VRCP:
 				case RSP_VECTOR_VRCPL: // hope this is ok
 				case RSP_VECTOR_VRCPH:
-				/*case RSP_VECTOR_VRSQL:
-				case RSP_VECTOR_VRSQH: // hope this is ok*/
+				case RSP_VECTOR_VRSQ:
+				case RSP_VECTOR_VRSQL:
+				case RSP_VECTOR_VRSQH: // hope this is ok
 				case RSP_VECTOR_VLT:
 				case RSP_VECTOR_VEQ:
 				case RSP_VECTOR_VGE:
@@ -389,7 +390,7 @@ static DWORD WriteToAccum2 (int Location, int PC, BOOL RecursiveCall) {
 			switch (RspOp.OP.R.rd) {
 			case RSP_LSC2_SV:
 			case RSP_LSC2_DV:
-			/*case RSP_LSC2_RV:*/
+			case RSP_LSC2_RV:
 			case RSP_LSC2_QV:
 			case RSP_LSC2_LV:
 			case RSP_LSC2_UV:
@@ -403,7 +404,7 @@ static DWORD WriteToAccum2 (int Location, int PC, BOOL RecursiveCall) {
 			break;
 		case RSP_SC2:
 			switch (RspOp.OP.R.rd) {
-			/*case RSP_LSC2_BV:*/
+			case RSP_LSC2_BV:
 			case RSP_LSC2_SV:
 			case RSP_LSC2_LV:
 			case RSP_LSC2_DV:
@@ -766,9 +767,10 @@ static BOOL WriteToVectorDest2 (DWORD DestReg, int PC, BOOL RecursiveCall) {
 			switch (RspOp.OP.R.rd) {
 			case RSP_LSC2_SV:
 			case RSP_LSC2_DV:
-			/*case RSP_LSC2_RV:*/
+			case RSP_LSC2_RV:
 			case RSP_LSC2_QV:
 			case RSP_LSC2_LV:
+				if (DestReg == RspOp.OP.LSV.vt) return TRUE;
 				break;
 
 			case RSP_LSC2_UV:
