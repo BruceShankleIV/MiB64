@@ -381,7 +381,7 @@ static DWORD WriteToAccum2 (int Location, int PC, BOOL RecursiveCall) {
 		case RSP_LH:
 		case RSP_LW:
 		case RSP_LBU:
-		/*case RSP_LHU:*/
+		case RSP_LHU:
 		case RSP_SB:
 		case RSP_SH:
 		case RSP_SW:
@@ -758,7 +758,7 @@ static BOOL WriteToVectorDest2 (DWORD DestReg, int PC, BOOL RecursiveCall) {
 		case RSP_LH:
 		case RSP_LW:
 		case RSP_LBU:
-		/*case RSP_LHU:*/
+		case RSP_LHU:
 		case RSP_SB:
 		case RSP_SH:
 		case RSP_SW:
