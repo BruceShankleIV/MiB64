@@ -906,62 +906,56 @@ BOOL WriteToVectorDest (DWORD DestReg, int PC) {
 ** Input: PC
 *************************************************************/
 
-/* TODO: consider delay slots and such in a branch? */
-/*BOOL UseRspFlags (int PC) {
+BOOL UseRspFlags (int flag, int PC) {
 	OPCODE RspOp;
-	int Instruction_State = NextInstruction;
 
-	if (Compiler.bFlags == FALSE) return TRUE;
+	if (RspCompiler.bFlags == FALSE) return TRUE;
 
-	if (Instruction_State == DELAY_SLOT) { 
-		return TRUE; 
-	}
-
-	do {
+	while(PC != (int)RspCurrentBlock.StartPC) {
 		PC -= 4;
-		if (PC < 0) { return TRUE; }
-		RSP_LW_IMEM(PC, &RspOp.Hex);
+		PC &= 0xFFC;
+		RSP_LW_IMEM(PC, &RspOp.OP.Hex);
 
-		switch (RspOp.op) {
+		switch (RspOp.OP.I.op) {
 
-		case RSP_REGIMM:
+		/*case RSP_REGIMM:
 			switch (RspOp.rt) {
 			case RSP_REGIMM_BLTZ:
 			case RSP_REGIMM_BGEZ:
 				Instruction_State = DO_DELAY_SLOT;
 				break;
 			default:
-				CompilerWarning("Unkown opcode in WriteToVectorDest\n%s",RSPOpcodeName(RspOp.Hex,PC));
+				CompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.Hex,PC));
 				return TRUE;
 			}
-			break;
+			break;*/
 		case RSP_SPECIAL:
-			switch (RspOp.funct) {
+			switch (RspOp.OP.R.funct) {
 			case RSP_SPECIAL_SLL:
 			case RSP_SPECIAL_SRL:
-			case RSP_SPECIAL_SRA:
+			/*case RSP_SPECIAL_SRA:
 			case RSP_SPECIAL_SLLV:
 			case RSP_SPECIAL_SRLV:
-			case RSP_SPECIAL_SRAV:
+			case RSP_SPECIAL_SRAV:*/
 			case RSP_SPECIAL_ADD:
-			case RSP_SPECIAL_ADDU:
+			/*case RSP_SPECIAL_ADDU:
 			case RSP_SPECIAL_SUB:
 			case RSP_SPECIAL_SUBU:
-			case RSP_SPECIAL_AND:
+			case RSP_SPECIAL_AND:*/
 			case RSP_SPECIAL_OR:
-			case RSP_SPECIAL_XOR:
-			case RSP_SPECIAL_NOR:
+			/*case RSP_SPECIAL_XOR:
+			case RSP_SPECIAL_NOR:*/
 			case RSP_SPECIAL_SLT:
-			case RSP_SPECIAL_SLTU:
-			case RSP_SPECIAL_BREAK:
+			/*case RSP_SPECIAL_SLTU:
+			case RSP_SPECIAL_BREAK:*/
 				break;
 
-			case RSP_SPECIAL_JR:
+			/*case RSP_SPECIAL_JR:
 				Instruction_State = DO_DELAY_SLOT;
-				break;
+				break;*/
 
 			default:
-				CompilerWarning("Unkown opcode in WriteToVectorDest\n%s",RSPOpcodeName(RspOp.Hex,PC));
+				RspCompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.OP.Hex,PC));
 				return TRUE;
 			}
 			break;
@@ -971,27 +965,26 @@ BOOL WriteToVectorDest (DWORD DestReg, int PC) {
 		case RSP_BNE:
 		case RSP_BLEZ:
 		case RSP_BGTZ:
-			Instruction_State = DO_DELAY_SLOT;
 			break;
 		case RSP_ADDI:
 		case RSP_ADDIU:
-		case RSP_SLTI:
-		case RSP_SLTIU:
+		/*case RSP_SLTI:
+		case RSP_SLTIU:*/
 		case RSP_ANDI:
 		case RSP_ORI:
-		case RSP_XORI:
+		/*case RSP_XORI:
 		case RSP_LUI:
-		case RSP_CP0:			
+		case RSP_CP0:*/
 			break;
 
 		case RSP_CP2:
-			if ((RspOp.rs & 0x10) != 0) {
-				switch (RspOp.funct) {
+			if ((RspOp.OP.I.rs & 0x10) != 0) {
+				switch (RspOp.OP.V.funct) {
 				case RSP_VECTOR_VMULF:
 				case RSP_VECTOR_VMUDL:
 				case RSP_VECTOR_VMUDM:
 				case RSP_VECTOR_VMUDN:
-				case RSP_VECTOR_VMUDH:
+				/*case RSP_VECTOR_VMUDH:*/
 					break;
 				case RSP_VECTOR_VMACF:
 				case RSP_VECTOR_VMADL:
@@ -1002,50 +995,103 @@ BOOL WriteToVectorDest (DWORD DestReg, int PC) {
 
 				case RSP_VECTOR_VSUB:
 				case RSP_VECTOR_VADD:
-					return FALSE;
-				case RSP_VECTOR_VSUBC:
+					if (flag == VCOCarryUsage || flag == VCONotEqualUsage) {
+						return FALSE;
+					}
+					break;
+				/*case RSP_VECTOR_VSUBC:*/
 				case RSP_VECTOR_VADDC:
-					return TRUE;
+					if (flag == VCOCarryUsage) {
+						return TRUE;
+					}
+					if (flag == VCONotEqualUsage) {
+						return FALSE;
+					}
+					break;
 
-				case RSP_VECTOR_VABS:				
-				case RSP_VECTOR_VAND:
+				/*case RSP_VECTOR_VABS:				
+				case RSP_VECTOR_VAND:*/
 				case RSP_VECTOR_VOR:
 				case RSP_VECTOR_VXOR:
 				case RSP_VECTOR_VRCPH:
-				case RSP_VECTOR_VRSQL:
-				case RSP_VECTOR_VRSQH:
+				/*case RSP_VECTOR_VRSQL:
+				case RSP_VECTOR_VRSQH:*/
 				case RSP_VECTOR_VRCPL:
-				case RSP_VECTOR_VRCP:
+				/*case RSP_VECTOR_VRCP:*/
 					break;
 
-				case RSP_VECTOR_VCR:
-				case RSP_VECTOR_VCH:
-				case RSP_VECTOR_VCL:				
+				/*case RSP_VECTOR_VCR:
+				case RSP_VECTOR_VCH:*/
+				case RSP_VECTOR_VCL:
+					if (flag == VCCGreaterUsage || flag == VCCLessUsage) {
+						return TRUE;
+					}
+					if (flag == VCOCarryUsage || flag == VCONotEqualUsage) {
+						return FALSE;
+					}
+					if (flag == VCEUsage) {
+						return FALSE;
+					}
+					break;
 				case RSP_VECTOR_VLT:
-				case RSP_VECTOR_VEQ:
+					/*case RSP_VECTOR_VEQ:*/
 				case RSP_VECTOR_VGE:
+					if (flag == VCCGreaterUsage) {
+						return TRUE;
+					}
+					if (flag == VCCLessUsage) {
+						return FALSE;
+					}
+					if (flag == VCOCarryUsage || flag == VCONotEqualUsage) {
+						return FALSE;
+					}
+					break;
+					
 				case RSP_VECTOR_VMRG:
-					return TRUE;
+					if (flag == VCOCarryUsage || flag == VCONotEqualUsage) {
+						return FALSE;
+					}
+					break;
 
-				case RSP_VECTOR_VSAW:
+				/*case RSP_VECTOR_VSAW:*/
 				case RSP_VECTOR_VMOV:				
 					break;
 
 				default:
-					CompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.Hex,PC));
+					RspCompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.OP.Hex,PC));
 					return TRUE;
 				}
 			} else {
-				switch (RspOp.rs) {
+				switch (RspOp.OP.I.rs) {
 				case RSP_COP2_CT:
-					return TRUE;
+					switch ((RspOp.OP.R.rd & 0x03)) {
+					case 0:
+						if (flag == VCOCarryUsage || flag == VCONotEqualUsage) {
+							return TRUE;
+						}
+						break;
+					case 1:
+						if (flag == VCCLessUsage || flag == VCCGreaterUsage) {
+							return TRUE;
+						}
+						break;
+					case 2:
+						if (flag == VCEUsage) {
+							return TRUE;
+						}
+						break;
+					/*case 3: RspVCE = RSP_GPR[RSPOpC.OP.R.rt].B[0]; break;*/
+					default:
+						RspCompilerWarning("Unknown source in ctc2:%d", RspOp.OP.R.rd & 0x03);
+					}
+					break;
 
 				case RSP_COP2_CF:
 				case RSP_COP2_MT:
 				case RSP_COP2_MF:
 					break;
 				default:
-					CompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.Hex,PC));
+					RspCompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.OP.Hex,PC));
 					return TRUE;
 				}
 			}
@@ -1054,63 +1100,54 @@ BOOL WriteToVectorDest (DWORD DestReg, int PC) {
 		case RSP_LH:
 		case RSP_LW:
 		case RSP_LBU:
-		case RSP_LHU:
+		/*case RSP_LHU:*/
 		case RSP_SB:
-		case RSP_SH:
+		/*case RSP_SH:*/
 		case RSP_SW:
 			break;
 		case RSP_LC2:
-			switch (RspOp.rd) {
+			switch (RspOp.OP.R.rd) {
 			case RSP_LSC2_SV:
 			case RSP_LSC2_DV:
-			case RSP_LSC2_RV:
+			/*case RSP_LSC2_RV:*/
 			case RSP_LSC2_QV:
 			case RSP_LSC2_LV:
 			case RSP_LSC2_UV:
 			case RSP_LSC2_PV:
-			case RSP_LSC2_TV:
+			/*case RSP_LSC2_TV:*/
 				break;
 			default:
-				CompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.Hex,PC));
+				RspCompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.OP.Hex,PC));
 				return TRUE;
 			}
 			break;
 		case RSP_SC2:
-			switch (RspOp.rd) {
-			case RSP_LSC2_BV:
+			switch (RspOp.OP.R.rd) {
+			/*case RSP_LSC2_BV:*/
 			case RSP_LSC2_SV:
 			case RSP_LSC2_LV:
 			case RSP_LSC2_DV:
 			case RSP_LSC2_QV:
-			case RSP_LSC2_RV:
-			case RSP_LSC2_PV:
+			/*case RSP_LSC2_RV:
+			case RSP_LSC2_PV:*/
 			case RSP_LSC2_UV:
-			case RSP_LSC2_HV:
+			/*case RSP_LSC2_HV:
 			case RSP_LSC2_FV:
 			case RSP_LSC2_WV:
-			case RSP_LSC2_TV:
+			case RSP_LSC2_TV:*/
 				break;
 			default:
-				CompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.Hex,PC));
+				RspCompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.OP.Hex,PC));
 				return TRUE;
 			}
 			break;
 		default:
-			CompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.Hex,PC));
+			RspCompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.OP.Hex,PC));
 			return TRUE;
 		}
-		switch (Instruction_State) {
-		case NORMAL: break;
-		case DO_DELAY_SLOT: 
-			Instruction_State = DELAY_SLOT;
-			break;
-		case DELAY_SLOT: 
-			Instruction_State = FINISH_BLOCK; 
-			break;
-		}
-	} while ( Instruction_State != FINISH_BLOCK);
+	}
 	return TRUE;
-}*/
+}
 
 /************************************************************
 ** IsRspRegisterConstant

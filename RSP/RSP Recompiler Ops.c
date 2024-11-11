@@ -7756,7 +7756,7 @@ void CompileRsp_Vector_VADD ( void ) {
 	BOOL bWriteToDest = WriteToVectorDest(RSPOpC.OP.V.vd, RspCompilePC);
 	BOOL bElement = ((RSPOpC.OP.V.element & 0x0f) >= 8) ? TRUE : FALSE;
 	BOOL bWriteToAccum = WriteToAccum(Low16BitAccum, RspCompilePC);
-	/*BOOL bFlagUseage = UseRspFlags(CompilePC);*/
+	BOOL bFlagUseage = UseRspFlags(VCOCarryUsage, RspCompilePC);
 
 	#ifndef CompileVadd
 	InterpreterFallback((void*)RSP_Vector_VADD,"RSP_Vector_VADD"); return;
@@ -7783,9 +7783,11 @@ void CompileRsp_Vector_VADD ( void ) {
 	}
 	
 	/* Used for involking x86 carry flag */
-	XorX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_ECX);
-	Push(&RspRecompPos, x86_EBP);
-	MoveVariableToX86reg(&RspRecompPos, &RSP_Flags[0].UW, "RSP_Flags[0].UW", x86_EBP);
+	if (bFlagUseage == TRUE) {
+		XorX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_ECX);
+		Push(&RspRecompPos, x86_EBP);
+		MoveVariableToX86reg(&RspRecompPos, &RspVCO, "RspVCO", x86_EBP);
+	}
 
 	for (count = 0; count < 8; count++) {
 		RSP_CPU_Message("     Iteration: %i", count);
@@ -7799,12 +7801,16 @@ void CompileRsp_Vector_VADD ( void ) {
 			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vt, del);
 			MoveSxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vt].HW[del], Reg, x86_EBX);
 		}
-		
-		MoveX86RegToX86Reg(&RspRecompPos, x86_EBP, x86_EDX);
-		AndConstToX86Reg(&RspRecompPos, x86_EDX, 1 << (7 - el));
-		CompX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_EDX);
 
-		AdcX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_EBX);
+		if (bFlagUseage == TRUE) {
+			MoveX86RegToX86Reg(&RspRecompPos, x86_EBP, x86_EDX);
+			AndConstToX86Reg(&RspRecompPos, x86_EDX, 1 << (7 - el));
+			CompX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_EDX);
+
+			AdcX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_EBX);
+		} else {
+			AddX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_EBX);
+		}
 
 		if (bWriteToAccum == TRUE) {
 			sprintf(Reg, "RSP_ACCUM_LOW.UHW[%i]", el);
@@ -7821,7 +7827,9 @@ void CompileRsp_Vector_VADD ( void ) {
 		}
 	}
 	MoveConstToVariable(&RspRecompPos, 0, &RspVCO, "RspVCO");
-	Pop(&RspRecompPos, x86_EBP);
+	if (bFlagUseage == TRUE) {
+		Pop(&RspRecompPos, x86_EBP);
+	}
 }
 
 void CompileRsp_Vector_VSUB ( void ) {

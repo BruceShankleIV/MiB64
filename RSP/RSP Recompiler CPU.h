@@ -49,9 +49,17 @@ extern "C" {
 	#define Low16BitAccum		4
 	#define EntireAccum			(Low16BitAccum|Middle16BitAccum|High16BitAccum)
 
+	enum {
+		VCOCarryUsage,
+		VCONotEqualUsage,
+		VCEUsage,
+		VCCLessUsage,
+		VCCGreaterUsage
+	};
+
 	BOOL WriteToAccum (int Location, int PC);
 	BOOL WriteToVectorDest (DWORD DestReg, int PC);
-	/*BOOL UseRspFlags (int PC);*/
+	BOOL UseRspFlags (int flag, int PC);
 
 	BOOL RspDelaySlotAffectBranch(DWORD PC);
 	BOOL RspCompareInstructions(DWORD PC, OPCODE* Top, OPCODE* Bottom);
@@ -111,7 +119,7 @@ extern "C" {
 		BOOL sse41;
 		BOOL avx;
 		BOOL avx2;
-		/*	BOOL bFlags;*/			/* RSP Flag Analysis */
+		BOOL bFlags;			/* RSP Flag Analysis */
 		BOOL bReOrdering;		/* Instruction reordering */
 		BOOL bSections;			/* Microcode sections */
 		BOOL bDest;				/* Vector destination toggle */
