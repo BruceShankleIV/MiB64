@@ -903,7 +903,7 @@ BOOL WriteToVectorDest (DWORD DestReg, int PC) {
 **	TRUE: Flags are determined not in use
 **	FALSE: Either unable to determine or are in use
 **
-** Input: PC
+** Input: flag, PC
 *************************************************************/
 
 BOOL UseRspFlags (int flag, int PC) {
@@ -1067,20 +1067,23 @@ BOOL UseRspFlags (int flag, int PC) {
 					switch ((RspOp.OP.R.rd & 0x03)) {
 					case 0:
 						if (flag == VCOCarryUsage || flag == VCONotEqualUsage) {
+							if (RspOp.OP.R.rt == 0) return FALSE;
 							return TRUE;
 						}
 						break;
 					case 1:
 						if (flag == VCCLessUsage || flag == VCCGreaterUsage) {
+							if (RspOp.OP.R.rt == 0) return FALSE;
 							return TRUE;
 						}
 						break;
 					case 2:
+					case 3:
 						if (flag == VCEUsage) {
+							if (RspOp.OP.R.rt == 0) return FALSE;
 							return TRUE;
 						}
 						break;
-					/*case 3: RspVCE = RSP_GPR[RSPOpC.OP.R.rt].B[0]; break;*/
 					default:
 						RspCompilerWarning("Unknown source in ctc2:%d", RspOp.OP.R.rd & 0x03);
 					}
@@ -1147,6 +1150,172 @@ BOOL UseRspFlags (int flag, int PC) {
 		}
 	}
 	return TRUE;
+}
+
+/************************************************************
+** WriteToFlag
+**
+** Output:
+**	TRUE: Destination flag is over-written later
+**	FALSE: Destination flag is used as a source later
+**
+** Input: flag, PC
+*************************************************************/
+
+static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
+	OPCODE RspOp;
+	/*DWORD BranchTarget = 0;
+	signed int BranchImmed = 0;
+	BOOL BranchMet = FALSE;
+	DWORD JumpTarget = 0;
+	BOOL JumpUncond = FALSE;*/
+
+	int Instruction_State = RSP_NextInstruction;
+
+	if (RspCompiler.bFlags == FALSE) return TRUE;
+
+	if (Instruction_State == DELAY_SLOT) {
+		LogMessage("TODO: WriteToFlag2 delay slot");
+		return TRUE;
+	}
+
+	do {
+		PC += 4;
+		PC &= 0xFFC;
+		RSP_LW_IMEM(PC, &RspOp.OP.Hex);
+
+		switch (RspOp.OP.I.op) {
+		case RSP_CP2:
+			if ((RspOp.OP.I.rs & 0x10) != 0) {
+				switch (RspOp.OP.V.funct) {
+				case RSP_VECTOR_VADDC:
+					if (flag == VCOCarryUsage || flag == VCONotEqualUsage) return FALSE;
+					break;
+				default:
+					RspCompilerWarning("Unkown opcode in WriteToFlag\n%s", RSPOpcodeName(RspOp.OP.Hex, PC));
+				}
+			} else {
+				switch (RspOp.OP.I.rs) {
+				case RSP_COP2_CF:
+					switch ((RspOp.OP.R.rd & 0x03)) {
+					case 0:
+						if (flag == VCOCarryUsage || flag == VCONotEqualUsage) return TRUE;
+						break;
+					case 1:
+						if (flag == VCCGreaterUsage || flag == VCCLessUsage) return TRUE;
+						break;
+					case 2:
+					case 3:
+						if (flag == VCEUsage) return TRUE;
+						break;
+					}
+					break;
+				default:
+					RspCompilerWarning("Unkown opcode in WriteToFlag\n%s", RSPOpcodeName(RspOp.OP.Hex, PC));
+				}
+			}
+		default:
+			RspCompilerWarning("Unkown opcode in WriteToFlag\n%s", RSPOpcodeName(RspOp.OP.Hex, PC));
+			return TRUE;
+		}
+		/*switch (Instruction_State) {
+		case NORMAL: break;
+		case DO_DELAY_SLOT:
+			Instruction_State = DELAY_SLOT;
+			break;
+		case DELAY_SLOT:
+			if (JumpUncond) {
+				PC = JumpTarget - 0x04;
+				Instruction_State = NORMAL;
+			}
+			else {
+				Instruction_State = FINISH_BLOCK;
+			}
+			JumpUncond = FALSE;
+			break;
+		}*/
+		LogMessage("TODO: WriteToFlag2 loop");
+	} while (Instruction_State != FINISH_BLOCK);
+
+	LogMessage("TODO: WriteToFlag2");
+
+	/***
+	** This is a tricky situation because most of the
+	** microcode does loops, so looping back and checking
+	** can prove effective, but it's still a branch..
+	***/
+
+/*	if (BranchMet == TRUE && RecursiveCall == FALSE) {
+		DWORD BranchTaken, BranchFall;*/
+
+		/* analysis of branch taken */
+/*		BranchTaken = WriteToVectorDest2(DestReg, (BranchTarget - 4) & 0xFFC, TRUE);*/
+		/* analysis of branch as nop */
+/*		BranchFall = WriteToVectorDest2(DestReg, PC, TRUE);
+
+		if (BranchImmed < 0) {
+			if (BranchTaken != FALSE) {*/
+				/*
+				** took this back branch and found a place
+				** that needs this vector as a source
+				** or a branch was met and we widdn't go deeper in recursion and decide to write the register
+				**/
+/*				return TRUE;
+			}
+			else if (BranchFall == HIT_BRANCH) {*/
+				/* (dlist) risky? the loop ended, hit another branch after loop-back */
+
+/*#if !defined(RSP_SAFE_ANALYSIS)
+				RSP_CPU_Message("WriteToDest: Backward branch hit, BranchFall = Hit branch (returning FALSE)");
+				return FALSE;
+#endif
+
+				return TRUE;
+			}
+			else {*/
+				/* otherwise this is completely valid */
+/*				return BranchFall;
+			}
+		}
+		else {
+			if (BranchFall != FALSE) {*/
+				/*
+				** took this forward branch and found a place
+				** that needs this vector as a source
+				**/
+/*				return TRUE;
+			}
+			else if (BranchTaken == HIT_BRANCH) {*/
+				/* (dlist) risky? jumped forward, hit another branch */
+
+/*#if !defined(RSP_SAFE_ANALYSIS)
+				RSP_CPU_Message("WriteToDest: Forward branch hit, BranchTaken = Hit branch (returning FALSE)");
+				return FALSE;
+#endif
+
+				return TRUE;
+			}
+			else {*/
+				/* otherwise this is completely valid */
+/*				return BranchTaken;
+			}
+		}
+	}
+	else {
+		return HIT_BRANCH;
+	}*/
+}
+
+BOOL WriteToFlag(int flag, int PC) {
+	DWORD value = WriteToFlag2(flag, PC, FALSE);
+
+	if (value == HIT_BRANCH) {
+		LogMessage("TODO: WriteToFlag hit branch");
+		return TRUE; /* ??? */
+	}
+	else {
+		return value;
+	}
 }
 
 /************************************************************

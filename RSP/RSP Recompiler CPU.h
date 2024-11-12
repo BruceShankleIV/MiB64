@@ -60,6 +60,7 @@ extern "C" {
 	BOOL WriteToAccum (int Location, int PC);
 	BOOL WriteToVectorDest (DWORD DestReg, int PC);
 	BOOL UseRspFlags (int flag, int PC);
+	BOOL WriteToFlag (int flag, int PC);
 
 	BOOL RspDelaySlotAffectBranch(DWORD PC);
 	BOOL RspCompareInstructions(DWORD PC, OPCODE* Top, OPCODE* Bottom);

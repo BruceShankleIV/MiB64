@@ -7757,6 +7757,7 @@ void CompileRsp_Vector_VADD ( void ) {
 	BOOL bElement = ((RSPOpC.OP.V.element & 0x0f) >= 8) ? TRUE : FALSE;
 	BOOL bWriteToAccum = WriteToAccum(Low16BitAccum, RspCompilePC);
 	BOOL bFlagUseage = UseRspFlags(VCOCarryUsage, RspCompilePC);
+	BOOL bWriteToFlag = WriteToFlag(VCOCarryUsage, RspCompilePC) || WriteToFlag(VCONotEqualUsage, RspCompilePC);
 
 	#ifndef CompileVadd
 	InterpreterFallback((void*)RSP_Vector_VADD,"RSP_Vector_VADD"); return;
@@ -7826,7 +7827,9 @@ void CompileRsp_Vector_VADD ( void ) {
 			MoveX86regHalfToVariable(&RspRecompPos, x86_EAX, &RSP_Vect[RSPOpC.OP.V.vd].HW[el], Reg);
 		}
 	}
-	MoveConstToVariable(&RspRecompPos, 0, &RspVCO, "RspVCO");
+	if (bWriteToFlag) {
+		MoveConstToVariable(&RspRecompPos, 0, &RspVCO, "RspVCO");
+	}
 	if (bFlagUseage == TRUE) {
 		Pop(&RspRecompPos, x86_EBP);
 	}
