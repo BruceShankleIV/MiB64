@@ -492,10 +492,10 @@ void MmxPsllwImmed(BYTE** code, int Dest, BYTE Immed) {
 	PUTDST8(*code, Immed);
 }
 
-/*void MmxPaddswRegToReg(int Dest, int Source) {
-	BYTE x86Command;
+void MmxPaddswRegToReg(BYTE** code, int Dest, int Source) {
+	BYTE x86Command = 0;
 
-	CPU_Message("      paddsw %s, %s", mmx_Name(Dest), mmx_Name(Source));
+	RSP_CPU_Message("      paddsw %s, %s", mmx_Name(Dest), mmx_Name(Source));
 
 	switch (Dest) {
 	case x86_MM0: x86Command = 0 << 3; break;
@@ -517,14 +517,14 @@ void MmxPsllwImmed(BYTE** code, int Dest, BYTE Immed) {
 	case x86_MM6: x86Command |= 6; break;
 	case x86_MM7: x86Command |= 7; break;
 	}
-	PUTDST16(RecompPos,0xed0f);
-	PUTDST8(RecompPos, 0xC0 | x86Command);
+	PUTDST16(*code,0xed0f);
+	PUTDST8(*code, 0xC0 | x86Command);
 }
 
-void MmxPaddswVariableToReg(int Dest, void * Variable, char * VariableName) {
-	BYTE x86Command;
+void MmxPaddswVariableToReg(BYTE** code, int Dest, void * Variable, char * VariableName) {
+	BYTE x86Command = 0;
 
-	CPU_Message("      paddsw %s, [%s]", mmx_Name(Dest), VariableName);
+	RSP_CPU_Message("      paddsw %s, [%s]", mmx_Name(Dest), VariableName);
 
 	switch (Dest) {
 	case x86_MM0: x86Command = 0x05; break;
@@ -537,10 +537,10 @@ void MmxPaddswVariableToReg(int Dest, void * Variable, char * VariableName) {
 	case x86_MM7: x86Command = 0x3D; break;
 	}
 
-	PUTDST16(RecompPos,0xed0f);
-	PUTDST8(RecompPos, x86Command);
-	PUTDST32(RecompPos, Variable);
-}*/
+	PUTDST16(*code,0xed0f);
+	PUTDST8(*code, x86Command);
+	PUTDST32(*code, Variable);
+}
 
 void MmxPaddwRegToReg(BYTE** code, int Dest, int Source) {
 	BYTE x86Command = 0;

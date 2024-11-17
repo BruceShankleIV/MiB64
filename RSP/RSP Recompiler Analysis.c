@@ -110,18 +110,21 @@ BOOL IsNextRspInstructionMmx(DWORD PC) {
 			} else if ((RspOp.rs & 0x0f) >= 2 && (RspOp.rs & 0x0f) <= 7 && IsMmx2Enabled == FALSE) {
 				return FALSE;
 			} else
-				return TRUE;
+				return TRUE;*/
 
-		case RSP_VECTOR_VADD:*/
+		case RSP_VECTOR_VADD:
+			if (!IsVectorOpcodeRecompiledWithMMX(RspOp.OP.V.funct)) {
+				return FALSE;
+			}
 			/* Requires no accumulator write! & No flags! */
-/*			if (WriteToAccum(Low16BitAccum, CompilePC) == TRUE) {
+			if (WriteToAccum(Low16BitAccum, RspCompilePC) == TRUE) {
 				return FALSE;
-			} else if (UseRspFlags(CompilePC) == TRUE) {
+			} else if (UseRspFlags(VCOCarryUsage, RspCompilePC) == TRUE) {
 				return FALSE;
-			} else if ((RspOp.rs & 0x0f) >= 2 && (RspOp.rs & 0x0f) <= 7 && IsMmx2Enabled == FALSE) {
+			} else if ((RspOp.OP.V.element & 0x0f) >= 2 && (RspOp.OP.V.element & 0x0f) <= 7 && IsMmx2Enabled == FALSE) {
 				return FALSE;
 			} else
-				return TRUE;*/
+				return TRUE;
 
 		default:
 			return FALSE;
@@ -1410,11 +1413,13 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 
 				return TRUE;*/
 				LogMessage("TODO: WriteToFlag2 branch met, try to loop, backward, fall hit branch");
+				return FALSE;
 			}
 			else {
 				/* otherwise this is completely valid */
 /*				return BranchFall;*/
 				LogMessage("TODO: WriteToFlag2 branch met, try to loop, backward");
+				return FALSE;
 			}
 		}
 		else {
@@ -1435,6 +1440,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 
 				return TRUE;*/
 				LogMessage("TODO: WriteToFlag2 branch met, try to loop, forward, branchTaken hit branch");
+				return FALSE;
 			}
 			else {
 				/* otherwise this is completely valid */

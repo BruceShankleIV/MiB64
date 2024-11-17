@@ -367,8 +367,8 @@ void MmxPmulhwRegToVariable			( BYTE** code, int Dest, void * Variable, char * V
 void MmxPsrlwImmed					( BYTE** code, int Dest, BYTE Immed );
 void MmxPsrawImmed					( BYTE** code, int Dest, BYTE Immed );
 void MmxPsllwImmed					( BYTE** code, int Dest, BYTE Immed );
-/*void MmxPaddswRegToReg(int Dest, int Source);
-void MmxPaddswVariableToReg(int Dest, void* Variable, char* VariableName);*/
+void MmxPaddswRegToReg				( BYTE** code, int Dest, int Source );
+void MmxPaddswVariableToReg			( BYTE** code, int Dest, void* Variable, char* VariableName );
 void MmxPaddwRegToReg				( BYTE** code, int Dest, int Source );
 void MmxPackSignedDwords			( BYTE** code, int Dest, int Source );
 void MmxUnpackLowWord				( BYTE** code, int Dest, int Source );
@@ -399,11 +399,13 @@ void Sse2CompareEqualDWordVariableToReg( BYTE** code, int Dest, void * Variable,
 void Sse2CompareEqualWordRegToReg	( BYTE** code, int Dest, int Source );
 void Sse2CompareGreaterWordRegToReg	( BYTE** code, int Dest, int Source );
 void Sse2CompareGreaterDWordRegToReg( BYTE** code, int Dest, int Source );
+void Sse2MoveDWordVariableToReg		( BYTE** code, int Dest, void * Variable, char * VariableName );
 void Sse2MoveQWordRegToReg			( BYTE** code, int Dest, int Source );
 void Sse2MoveSxWordRegToDWordReg	( BYTE** code, int Dest, int Source, BOOL SSE41Supported );
 void Sse2PackSignedDWordRegToWordReg( BYTE** code, int Dest, int Source );
 void Sse2PadddRegToReg				( BYTE** code, int Dest, int Source );
 void Sse2PadddVariableToReg			( BYTE** code, int Dest, void * Variable, char * VariableName );
+void Sse2PaddswRegToReg				( BYTE** code, int Dest, int Source );
 void Sse2PadduswRegToReg			( BYTE** code, int Dest, int Source );
 void Sse2PaddwRegToReg				( BYTE** code, int Dest, int Source );
 void Sse2PandVariableToReg			( BYTE** code, int Dest, void * Variable, char * VariableName );
