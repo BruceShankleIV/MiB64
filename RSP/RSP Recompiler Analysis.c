@@ -582,7 +582,7 @@ static BOOL WriteToVectorDest2 (DWORD DestReg, int PC, BOOL RecursiveCall) {
 			case RSP_SPECIAL_AND:
 			case RSP_SPECIAL_OR:
 			case RSP_SPECIAL_XOR:
-			/*case RSP_SPECIAL_NOR:*/
+			case RSP_SPECIAL_NOR:
 			case RSP_SPECIAL_SLT:
 			/*case RSP_SPECIAL_SLTU:*/
 				break;
@@ -944,11 +944,12 @@ BOOL UseRspFlags (int flag, int PC) {
 			case RSP_SPECIAL_SLLV:
 			case RSP_SPECIAL_SRLV:
 			case RSP_SPECIAL_SRAV:*/
+			case RSP_SPECIAL_JALR:
 			case RSP_SPECIAL_ADD:
-			/*case RSP_SPECIAL_ADDU:
+			/*case RSP_SPECIAL_ADDU:*/
 			case RSP_SPECIAL_SUB:
-			case RSP_SPECIAL_SUBU:
-			case RSP_SPECIAL_AND:*/
+			/*case RSP_SPECIAL_SUBU:*/
+			case RSP_SPECIAL_AND:
 			case RSP_SPECIAL_OR:
 			/*case RSP_SPECIAL_XOR:
 			case RSP_SPECIAL_NOR:*/
@@ -1006,7 +1007,7 @@ BOOL UseRspFlags (int flag, int PC) {
 						return FALSE;
 					}
 					break;
-				/*case RSP_VECTOR_VSUBC:*/
+				case RSP_VECTOR_VSUBC:
 				case RSP_VECTOR_VADDC:
 					if (flag == VCOCarryUsage) {
 						return TRUE;
@@ -1060,7 +1061,7 @@ BOOL UseRspFlags (int flag, int PC) {
 					}
 					break;
 
-				/*case RSP_VECTOR_VSAW:*/
+				case RSP_VECTOR_VSAR:
 				case RSP_VECTOR_VMOV:				
 					break;
 
@@ -1112,7 +1113,7 @@ BOOL UseRspFlags (int flag, int PC) {
 		case RSP_LBU:
 		/*case RSP_LHU:*/
 		case RSP_SB:
-		/*case RSP_SH:*/
+		case RSP_SH:
 		case RSP_SW:
 			break;
 		case RSP_LC2:
@@ -1195,6 +1196,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 			switch (RspOp.OP.R.funct) {
 			case RSP_SPECIAL_SLL:
 			case RSP_SPECIAL_SRL:
+			case RSP_SPECIAL_SRA:
 				break;
 			case RSP_SPECIAL_JR:
 				if (Instruction_State == DELAY_SLOT) return TRUE;
@@ -1203,7 +1205,9 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 			case RSP_SPECIAL_ADD:
 			case RSP_SPECIAL_ADDU:
 			case RSP_SPECIAL_SUB:
+			case RSP_SPECIAL_AND:
 			case RSP_SPECIAL_OR:
+			case RSP_SPECIAL_NOR:
 			case RSP_SPECIAL_SLT:
 				break;
 			default:
@@ -1213,6 +1217,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 			break;
 		case RSP_REGIMM:
 			switch (RspOp.OP.B.rt) {
+			case RSP_REGIMM_BLTZ:
 			case RSP_REGIMM_BGEZ:
 				if (Instruction_State == DELAY_SLOT) return TRUE;
 				Instruction_State = DO_DELAY_SLOT;
@@ -1248,6 +1253,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 		case RSP_ADDIU:
 		case RSP_ANDI:
 		case RSP_XORI:
+		case RSP_CP0:
 			break;
 		case RSP_CP2:
 			if ((RspOp.OP.I.rs & 0x10) != 0) {
@@ -1263,6 +1269,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 				case RSP_VECTOR_VMADH:
 					break;
 				case RSP_VECTOR_VADD:
+				case RSP_VECTOR_VSUB:
 					if (flag == VCOCarryUsage) return TRUE;
 					if (flag == VCONotEqualUsage) return FALSE;
 					break;
@@ -1286,8 +1293,11 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 					if (flag == VCOCarryUsage || flag == VCONotEqualUsage) return TRUE;
 					if (flag == VCCGreaterUsage || flag == VCCLessUsage) return FALSE;
 					break;
+				case RSP_VECTOR_VCL:
+					return TRUE;
 				case RSP_VECTOR_VOR:
 				case RSP_VECTOR_VXOR:
+				case RSP_VECTOR_VRCP:
 				case RSP_VECTOR_VRCPL:
 				case RSP_VECTOR_VRCPH:
 				case RSP_VECTOR_VMOV:
@@ -1324,6 +1334,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 			break;
 		case RSP_LH:
 		case RSP_LW:
+		case RSP_LBU:
 		case RSP_LHU:
 		case RSP_SB:
 		case RSP_SH:
@@ -1405,15 +1416,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 			}
 			else if (BranchFall == HIT_BRANCH) {
 				/* (dlist) risky? the loop ended, hit another branch after loop-back */
-
-/*#if !defined(RSP_SAFE_ANALYSIS)
-				RSP_CPU_Message("WriteToDest: Backward branch hit, BranchFall = Hit branch (returning FALSE)");
-				return FALSE;
-#endif
-
-				return TRUE;*/
-				LogMessage("TODO: WriteToFlag2 branch met, try to loop, backward, fall hit branch");
-				return FALSE;
+				return TRUE;
 			}
 			else {
 				/* otherwise this is completely valid */
@@ -1432,15 +1435,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 			}
 			else if (BranchTaken == HIT_BRANCH) {
 				/* (dlist) risky? jumped forward, hit another branch */
-
-/*#if !defined(RSP_SAFE_ANALYSIS)
-				RSP_CPU_Message("WriteToDest: Forward branch hit, BranchTaken = Hit branch (returning FALSE)");
-				return FALSE;
-#endif
-
-				return TRUE;*/
-				LogMessage("TODO: WriteToFlag2 branch met, try to loop, forward, branchTaken hit branch");
-				return FALSE;
+				return TRUE;
 			}
 			else {
 				/* otherwise this is completely valid */
