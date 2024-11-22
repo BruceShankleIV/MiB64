@@ -95,7 +95,7 @@ DWORD BeginOfCurrentSubBlock = 0;
 /*#	define CompileVrsqh
 #	define CompileVrcph
 #	define CompileVsaw*/		/* Verified 12/17/2000 - Jabo */
-/*#	define CompileVabs*/		/* Verified 12/15/2000 - Jabo */
+#	define CompileVabs		/* Verified 12/15/2000 - Jabo */
 /*#	define CompileVmov*/		/* Verified 12/17/2000 - Jabo */
 /*#	define CompileVxor*/		/* Verified 12/17/2000 - Jabo */
 /*#	define CompileVor*/		/* Verified 12/17/2000 - Jabo */
@@ -8432,95 +8432,103 @@ void CompileRsp_Vector_VSUT ( void ) {
 }
 
 void CompileRsp_Vector_VABS ( void ) {
-	/*int count, el, del;
+	int count, el, del;
 	char Reg[256];
 	
-	BOOL bWriteToDest = WriteToVectorDest(RSPOpC.sa, CompilePC);
+	/*BOOL bWriteToDest = WriteToVectorDest(RSPOpC.sa, CompilePC);
 	BOOL bWriteToAccum = WriteToAccum(Low16BitAccum, CompilePC);*/
 
 	#ifndef CompileVabs
 	InterpreterFallback((void*)RSP_Vector_VABS,"RSP_Vector_VABS"); return;
 	#endif
 
-	/*CPU_Message("  %X %s",CompilePC,RSPOpcodeName(RSPOpC.Hex,CompilePC));
+	RSP_CPU_Message("  %X %s",RspCompilePC,RSPOpcodeName(RSPOpC.OP.Hex,RspCompilePC));
 
 	for (count = 0; count < 8; count++) {
-		CPU_Message("     Iteration: %i", count);
-		el = Indx[RSPOpC.rs].B[count];
-		del = EleSpec[RSPOpC.rs].B[el];
+		RSP_CPU_Message("     Iteration: %i", count);
+		el = Indx[RSPOpC.OP.V.element].B[count];
+		del = EleSpec[RSPOpC.OP.V.element].B[el];
 
-		if (RSPOpC.rd == RSPOpC.rt && (RSPOpC.rs & 0xF) < 2) {*/
+		/*if (RSPOpC.OP.V.vs == RSPOpC.OP.V.vt && (RSPOpC.OP.V.element & 0xF) < 2) {*/
 			/**
 			** Optimize: EDI/ESI unused, and ECX is const etc
 			***/
 
-/*			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.rd, el);
-			MoveSxVariableToX86regHalf(&RSP_Vect[RSPOpC.rd].HW[el], Reg, x86_EAX);*/
+/*			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vs, el);
+			MoveSxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vs].HW[el], Reg, x86_EAX);*/
 
 			/*** Obtain the negative of the source ****/
-/*			MoveX86RegToX86Reg(x86_EAX, x86_EBX);
-			NegateX86reg(x86_EBX);*/
+/*			MoveX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_EBX);
+			NegateX86reg(&RspRecompPos, x86_EBX);*/
 		
 			/**
 			** determine negative value, 
 			** note: negate(FFFF8000h) == 00008000h 
 			***/
 
-/*			MoveConstToX86reg(0x7fff, x86_ECX);
-			CompConstToX86reg(x86_EBX, 0x00008000);
-			CondMoveEqual(x86_EBX, x86_ECX);*/
+/*			MoveConstToX86reg(&RspRecompPos, 0x7fff, x86_ECX);
+			CompConstToX86reg(&RspRecompPos, x86_EBX, 0x00008000);
+			CondMoveEqual(&RspRecompPos, x86_EBX, x86_ECX);*/
 
 			/* sign clamp, dest = (eax >= 0) ? eax : ebx */
-/*			CompConstToX86reg(x86_EAX, 0);
-			CondMoveLess(x86_EAX, x86_EBX);
+/*			CompConstToX86reg(&RspRecompPos, x86_EAX, 0);
+			CondMoveLess(&RspRecompPos, x86_EAX, x86_EBX);*/
 
-			if (bWriteToDest == TRUE) {
-				sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.sa, el);
-				MoveX86regHalfToVariable(x86_EAX, &RSP_Vect[RSPOpC.sa].HW[el], Reg);
+			/*if (bWriteToDest == TRUE)*/ /*{
+				sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vd, el);
+				MoveX86regHalfToVariable(&RspRecompPos, x86_EAX, &RSP_Vect[RSPOpC.OP.V.vd].HW[el], Reg);
+			}*/
+			/*if (bWriteToAccum == TRUE)*/ /*{
+				sprintf(Reg, "RSP_ACCUM_LOW.UHW[%i]", el);
+				MoveX86regHalfToVariable(&RspRecompPos, x86_EAX, &RSP_ACCUM_LOW.UHW[el], Reg);
 			}
-			if (bWriteToAccum == TRUE) {
-				sprintf(Reg, "RSP_ACCUM[%i].HW[1]", el);
-				MoveX86regHalfToVariable(x86_EAX, &RSP_ACCUM[el].HW[1], Reg);
-			}
-		} else {*/
+		} else*/ {
 			/**
 			** Optimize: ESI unused, and EDX is const etc
 			***/
 
-/*			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.rd, el);
-			MoveSxVariableToX86regHalf(&RSP_Vect[RSPOpC.rd].HW[el], Reg, x86_EAX);
-			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.rt, del);
-			MoveSxVariableToX86regHalf(&RSP_Vect[RSPOpC.rt].HW[del], Reg, x86_EBX);*/
+			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vs, el);
+			MoveSxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vs].HW[el], Reg, x86_EAX);
+			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vt, del);
+			MoveSxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vt].HW[del], Reg, x86_EBX);
 
 			/*** Obtain the negative of the source ****/
-/*			MoveX86RegToX86Reg(x86_EBX, x86_ECX);
-			NegateX86reg(x86_EBX);*/
+			MoveX86RegToX86Reg(&RspRecompPos, x86_EBX, x86_ECX);
+			NegateX86reg(&RspRecompPos, x86_EBX);
 
 			/**
 			** determine negative value, 
 			** note: negate(FFFF8000h) == 00008000h 
 			***/
 
-/*			MoveConstToX86reg(0x7fff, x86_EDX);
-			CompConstToX86reg(x86_EBX, 0x00008000);
-			CondMoveEqual(x86_EBX, x86_EDX);*/
+			XorX86RegToX86Reg(&RspRecompPos, x86_ESI, x86_ESI);
 
 			/* sign clamp, dest = (eax >= 0) ? ecx : ebx */
-/*			CompConstToX86reg(x86_EAX, 0);
-			CondMoveGreaterEqual(x86_EDI, x86_ECX);
-			CondMoveLess(x86_EDI, x86_EBX);
+			CompConstToX86reg(&RspRecompPos, x86_EAX, 0);
+			//CondMoveGreaterEqual(&RspRecompPos, x86_EDI, x86_ECX);
+			CondMoveGreater(&RspRecompPos, x86_EDI, x86_ECX);
+			CondMoveEqual(&RspRecompPos, x86_EDI, x86_ESI);
+			CondMoveLess(&RspRecompPos, x86_EDI, x86_EBX);
 
-			if (bWriteToDest == TRUE) {
-				sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.sa, el);
-				MoveX86regHalfToVariable(x86_EDI, &RSP_Vect[RSPOpC.sa].HW[el], Reg);
+			/*if (bWriteToAccum == TRUE)*/ {
+				sprintf(Reg, "RSP_ACCUM_LOW.UHW[%i]", el);
+				MoveX86regHalfToVariable(&RspRecompPos, x86_EDI, &RSP_ACCUM_LOW.UHW[el], Reg);
 			}
-			if (bWriteToAccum == TRUE) {
-				sprintf(Reg, "RSP_ACCUM[%i].HW[1]", el);
-				MoveX86regHalfToVariable(x86_EDI, &RSP_ACCUM[el].HW[1], Reg);	
+
+			MoveConstToX86reg(&RspRecompPos, 0x7fff, x86_EDX);
+			CompConstToX86reg(&RspRecompPos, x86_EBX, 0x00008000);
+			CondMoveEqual(&RspRecompPos, x86_EBX, x86_EDX);
+
+			CompConstToX86reg(&RspRecompPos, x86_EAX, 0);
+			CondMoveLess(&RspRecompPos, x86_EDI, x86_EBX);
+
+			/*if (bWriteToDest == TRUE)*/ {
+				sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vd, el);
+				MoveX86regHalfToVariable(&RspRecompPos, x86_EDI, &RSP_Vect[RSPOpC.OP.V.vd].HW[el], Reg);
 			}
+			
 		}
-	}*/
-	LogMessage("TODO: CompileRsp_Vector_VABS");
+	}
 }
 
 void CompileRsp_Vector_VADDC ( void ) {

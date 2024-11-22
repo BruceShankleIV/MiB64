@@ -3128,6 +3128,22 @@ void MulX86reg(BYTE** code, int x86reg) {
 	}
 }
 
+void NegateX86reg(BYTE** code, int x86reg) {
+	CPU_OR_RSP_Message(*code, "      neg %s", x86_Name(x86reg));
+	switch (x86reg) {
+	case x86_EAX: PUTDST16(*code, 0xd8f7); break;
+	case x86_EBX: PUTDST16(*code, 0xdbf7); break;
+	case x86_ECX: PUTDST16(*code, 0xd9f7); break;
+	case x86_EDX: PUTDST16(*code, 0xdaf7); break;
+	case x86_ESI: PUTDST16(*code, 0xdef7); break;
+	case x86_EDI: PUTDST16(*code, 0xdff7); break;
+	case x86_ESP: PUTDST16(*code, 0xdcf7); break;
+	case x86_EBP: PUTDST16(*code, 0xddf7); break;
+	default:
+		DisplayError("NegateX86reg\nUnknown x86 Register");
+	}
+}
+
 void NotX86Reg(BYTE** code, int  x86Reg) {
 	CPU_OR_RSP_Message(*code, "      not %s",x86_Name(x86Reg));
 	switch (x86Reg) {

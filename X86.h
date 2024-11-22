@@ -222,6 +222,7 @@ void MoveZxVariableToX86regByte      ( BYTE** code, void *Variable, char *Variab
 void MoveZxVariableToX86regHalf      ( BYTE** code, void *Variable, char *VariableName, int x86reg );
 void MoveZxX86RegPtrDispToX86RegHalf ( BYTE** code, int AddrReg, BYTE Disp, int Destination );
 void MulX86reg                       ( BYTE** code, int x86reg );
+void NegateX86reg					 ( BYTE** code, int x86reg );
 void NotX86Reg                       ( BYTE** code, int x86Reg );
 void OrConstToVariable               ( BYTE** code, DWORD Const, void * Variable, char * VariableName );
 void OrConstToX86Reg                 ( BYTE** code, DWORD Const, int  x86Reg );
