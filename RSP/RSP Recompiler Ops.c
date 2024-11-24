@@ -8435,8 +8435,8 @@ void CompileRsp_Vector_VABS ( void ) {
 	int count, el, del;
 	char Reg[256];
 	
-	/*BOOL bWriteToDest = WriteToVectorDest(RSPOpC.sa, CompilePC);
-	BOOL bWriteToAccum = WriteToAccum(Low16BitAccum, CompilePC);*/
+	BOOL bWriteToDest = WriteToVectorDest(RSPOpC.OP.V.vd, RspCompilePC);
+	BOOL bWriteToAccum = WriteToAccum(Low16BitAccum, RspCompilePC);
 
 	#ifndef CompileVabs
 	InterpreterFallback((void*)RSP_Vector_VABS,"RSP_Vector_VABS"); return;
@@ -8445,10 +8445,14 @@ void CompileRsp_Vector_VABS ( void ) {
 	RSP_CPU_Message("  %X %s",RspCompilePC,RSPOpcodeName(RSPOpC.OP.Hex,RspCompilePC));
 
 	if (RSPOpC.OP.V.vs == RSPOpC.OP.V.vt && (RSPOpC.OP.V.element & 0xF) < 2) {
-		MoveConstToX86reg(&RspRecompPos, 0x7fff, x86_ECX);
+		if (bWriteToDest == TRUE) {
+			MoveConstToX86reg(&RspRecompPos, 0x7fff, x86_ECX);
+		}
 	} else {
 		XorX86RegToX86Reg(&RspRecompPos, x86_ESI, x86_ESI);
-		MoveConstToX86reg(&RspRecompPos, 0x7fff, x86_EDX);
+		if (bWriteToDest == TRUE) {
+			MoveConstToX86reg(&RspRecompPos, 0x7fff, x86_EDX);
+		}
 	}
 
 	for (count = 0; count < 8; count++) {
@@ -8468,9 +8472,9 @@ void CompileRsp_Vector_VABS ( void ) {
 			MoveX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_EBX);
 			NegateX86reg(&RspRecompPos, x86_EBX);
 
-			/*if (bWriteToAccum == TRUE)*/ {
+			if (bWriteToAccum == TRUE) {
 				int  regAccum = x86_EAX;
-				/*if (bWriteToDest == TRUE)*/ {
+				if (bWriteToDest == TRUE) {
 					MoveX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_ESI);
 					regAccum = x86_ESI;
 				}
@@ -8482,7 +8486,7 @@ void CompileRsp_Vector_VABS ( void ) {
 				sprintf(Reg, "RSP_ACCUM_LOW.UHW[%i]", el);
 				MoveX86regHalfToVariable(&RspRecompPos, regAccum, &RSP_ACCUM_LOW.UHW[el], Reg);
 			}
-			/*if (bWriteToDest == TRUE)*/ {
+			if (bWriteToDest == TRUE) {
 				/**
 				 ** determine negative value,
 				 ** note: negate(FFFF8000h) == 00008000h
@@ -8516,14 +8520,14 @@ void CompileRsp_Vector_VABS ( void ) {
 			CondMoveGreater(&RspRecompPos, x86_EDI, x86_ECX);
 			CondMoveEqual(&RspRecompPos, x86_EDI, x86_ESI);
 
-			/*if (bWriteToAccum == TRUE)*/ {
+			if (bWriteToAccum == TRUE) {
 				CondMoveLess(&RspRecompPos, x86_EDI, x86_EBX);
 
 				sprintf(Reg, "RSP_ACCUM_LOW.UHW[%i]", el);
 				MoveX86regHalfToVariable(&RspRecompPos, x86_EDI, &RSP_ACCUM_LOW.UHW[el], Reg);
 			}
 
-			/*if (bWriteToDest == TRUE)*/ {
+			if (bWriteToDest == TRUE) {
 				/**
 				 ** determine negative value,
 				 ** note: negate(FFFF8000h) == 00008000h
