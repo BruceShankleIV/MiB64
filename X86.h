@@ -439,6 +439,7 @@ void Sse2ShuffleHighWordsMemoryToReg( BYTE** code, int Dest, void * Variable, ch
 void Sse2ShuffleHighWordsRegToReg	( BYTE** code, int Dest, int Source, BYTE Immed );
 
 void Sse41PackUnsignedDWordRegToWordReg( BYTE** code, int Dest, int Source );
+void Sse41PBlendRegToRegWithXMM0Mask( BYTE** code, int Dest, int Source );
 void Sse41PBlendVariableToRegWithXMM0Mask( BYTE** code, int Dest, void * Variable, char * VariableName );
 
 /*typedef struct {
