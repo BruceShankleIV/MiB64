@@ -102,8 +102,8 @@ DWORD BeginOfCurrentSubBlock = 0;
 /*#	define CompileVand*/		/* Verified 12/17/2000 - Jabo */
 #	define CompileVsub		/* Verified 12/17/2000 - Jabo (watch flags) */
 #	define CompileVadd		/* Verified 12/17/2000 - Jabo (watch flags) */
-/*#	define CompileVaddc
-#	define CompileVsubc
+#	define CompileVaddc
+/*#	define CompileVsubc
 #	define CompileVmrg*/
 #   define CompileAddAndClear
 #endif
@@ -8700,67 +8700,76 @@ void CompileRsp_Vector_VABS ( void ) {
 }
 
 void CompileRsp_Vector_VADDC ( void ) {
-	/*char Reg[256];
+	char Reg[256];
 	int count, el, del;
 
-	BOOL bWriteToDest = WriteToVectorDest(RSPOpC.sa, CompilePC);
-	BOOL bWriteToAccum = WriteToAccum(Low16BitAccum, CompilePC);
-	BOOL bElement = ((RSPOpC.rs & 0x0f) >= 8) ? TRUE : FALSE;*/
+	BOOL bWriteToDest = WriteToVectorDest(RSPOpC.OP.V.vd, RspCompilePC);
+	BOOL bWriteToAccum = WriteToAccum(Low16BitAccum, RspCompilePC);
+	BOOL bElement = ((RSPOpC.OP.V.element & 0x0f) >= 8) ? TRUE : FALSE;
+	BOOL bWriteToFlag = WriteToFlag(VCOCarryUsage, RspCompilePC) || WriteToFlag(VCONotEqualUsage, RspCompilePC);
 	
 	#ifndef CompileVaddc
 	InterpreterFallback((void*)RSP_Vector_VADDC,"RSP_Vector_VADDC"); return;
 	#endif
 
-	/*CPU_Message("  %X %s",CompilePC,RSPOpcodeName(RSPOpC.Hex,CompilePC));
+	RSP_CPU_Message("  %X %s",RspCompilePC,RSPOpcodeName(RSPOpC.OP.Hex,RspCompilePC));
+
+	if (bWriteToDest == FALSE && bWriteToAccum == FALSE && bWriteToFlag == FALSE) {
+		return;
+	}
 
 	if (bElement == TRUE) {
-		del = (RSPOpC.rs & 0x07) ^ 7;
-		sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.rt, del);
-		MoveZxVariableToX86regHalf(&RSP_Vect[RSPOpC.rt].HW[del], Reg, x86_EBX);
-	}*/
+		del = (RSPOpC.OP.V.element & 0x07) ^ 7;
+		sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vt, del);
+		MoveZxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vt].HW[del], Reg, x86_EBX);
+	}
 
-	/* Initialize flag register */
-/*	XorX86RegToX86Reg(x86_ECX, x86_ECX);
+	if (bWriteToFlag == TRUE) {
+		/* Initialize flag register */
+		XorX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_ECX);
 
-	Push(x86_EBP);
-	sprintf(Reg, "RSP_Vect[%i].HW[0]", RSPOpC.rd);
-	MoveOffsetToX86reg((DWORD)&RSP_Vect[RSPOpC.rd].HW[0], Reg, x86_EBP);
+		// clear setnz destination
+		XorX86RegToX86Reg(&RspRecompPos, x86_EDX, x86_EDX);
+	}
+
+	sprintf(Reg, "RSP_Vect[%i].HW[0]", RSPOpC.OP.V.vs);
+	MoveOffsetToX86reg(&RspRecompPos, (DWORD)&RSP_Vect[RSPOpC.OP.V.vs].HW[0], Reg, x86_ESI);
 
 	for (count = 0; count < 8; count++) {
-		CPU_Message("     Iteration: %i", count);
-		el = Indx[RSPOpC.rs].B[count];
-		del = EleSpec[RSPOpC.rs].B[el];*/
+		RSP_CPU_Message("     Iteration: %i", count);
+		el = Indx[RSPOpC.OP.V.element].B[count];
+		del = EleSpec[RSPOpC.OP.V.element].B[el];
 	
-		/*sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.rd, el);
-		MoveZxVariableToX86regHalf(&RSP_Vect[RSPOpC.rd].HW[el], Reg, x86_EAX);*/
-/*		MoveZxX86RegPtrDispToX86RegHalf(x86_EBP, el * 2, x86_EAX);
+		MoveZxX86RegPtrDispToX86RegHalf(&RspRecompPos, x86_ESI, (BYTE)(el * 2), x86_EAX);
 
 		if (bElement == FALSE) {
-			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.rt, del);
-			MoveZxVariableToX86regHalf(&RSP_Vect[RSPOpC.rt].HW[del], Reg, x86_EBX);
+			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vt, del);
+			MoveZxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vt].HW[del], Reg, x86_EBX);
 		}
 
-		AddX86RegToX86Reg(x86_EAX, x86_EBX);
+		AddX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_EBX);
 
-		XorX86RegToX86Reg(x86_EDX, x86_EDX);
-		TestConstToX86Reg(0xFFFF0000, x86_EAX);
-		Setnz(x86_EDX);
-		if ((7 - el) != 0) {
-			ShiftLeftSignImmed(x86_EDX, 7 - el);
+		if (bWriteToFlag == TRUE) {
+			TestConstToX86Reg(&RspRecompPos, 0xFFFF0000, x86_EAX);
+			Setnz(&RspRecompPos, x86_EDX);
+			if ((7 - el) != 0) {
+				ShiftLeftSignImmed(&RspRecompPos, x86_EDX, (BYTE)(7 - el));
+			}
+			OrX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_EDX);
 		}
-		OrX86RegToX86Reg(x86_ECX, x86_EDX);
 
 		if (bWriteToAccum == TRUE) {
-			MoveX86regHalfToVariable(x86_EAX, &RSP_ACCUM[el].HW[1], "RSP_ACCUM[el].HW[1]");
+			sprintf(Reg, "RSP_ACCUM_LOW.UHW[%i]", el);
+			MoveX86regHalfToVariable(&RspRecompPos, x86_EAX, &RSP_ACCUM_LOW.UHW[el], Reg);
 		}
 		if (bWriteToDest == TRUE) {
-			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.sa, el);
-			MoveX86regHalfToVariable(x86_EAX, &RSP_Vect[RSPOpC.sa].HW[el], Reg);
+			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vd, el);
+			MoveX86regHalfToVariable(&RspRecompPos, x86_EAX, &RSP_Vect[RSPOpC.OP.V.vd].HW[el], Reg);
 		}
 	}
-	MoveX86regToVariable(x86_ECX, &RSP_Flags[0].UW, "RSP_Flags[0].UW");
-	Pop(x86_EBP);*/
-	LogMessage("TODO: CompileRsp_Vector_VADDC");
+	if (bWriteToFlag == TRUE) {
+		MoveX86regToVariable(&RspRecompPos, x86_ECX, &RSP_Flags[0].UW, "RSP_Flags[0].UW");
+	}
 }
 
 void CompileRsp_Vector_VSUBC ( void ) {

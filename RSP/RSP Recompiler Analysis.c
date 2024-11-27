@@ -693,6 +693,7 @@ static BOOL WriteToVectorDest2 (DWORD DestReg, int PC, BOOL RecursiveCall) {
 				case RSP_VECTOR_VRCPH:
 				case RSP_VECTOR_VRCPL:
 				case RSP_VECTOR_VRCP:
+				case RSP_VECTOR_VRSQ:
 				case RSP_VECTOR_VRSQH:
 				case RSP_VECTOR_VRSQL:
 					if (DestReg == RspOp.OP.V.vt) { return TRUE; }
@@ -1197,11 +1198,14 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 			case RSP_SPECIAL_SLL:
 			case RSP_SPECIAL_SRL:
 			case RSP_SPECIAL_SRA:
+			case RSP_SPECIAL_SLLV:
 				break;
 			case RSP_SPECIAL_JR:
 				if (Instruction_State == DELAY_SLOT) return TRUE;
 				Instruction_State = DO_DELAY_SLOT;
 				break;
+			case RSP_SPECIAL_BREAK:
+				return TRUE;
 			case RSP_SPECIAL_ADD:
 			case RSP_SPECIAL_ADDU:
 			case RSP_SPECIAL_SUB:
@@ -1252,6 +1256,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 		case RSP_ADDI:
 		case RSP_ADDIU:
 		case RSP_ANDI:
+		case RSP_ORI:
 		case RSP_XORI:
 		case RSP_CP0:
 			break;
@@ -1263,6 +1268,9 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 				case RSP_VECTOR_VMUDM:
 				case RSP_VECTOR_VMUDN:
 				case RSP_VECTOR_VMUDH:
+				case RSP_VECTOR_VMACF:
+				case RSP_VECTOR_VMACU:
+				case RSP_VECTOR_VMACQ:
 				case RSP_VECTOR_VMADL:
 				case RSP_VECTOR_VMADM:
 				case RSP_VECTOR_VMADN:
@@ -1295,12 +1303,20 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 					break;
 				case RSP_VECTOR_VCL:
 					return TRUE;
+				case RSP_VECTOR_VCH:
+					return FALSE;
+				case RSP_VECTOR_VMRG:
+					if (flag == VCCGreaterUsage) return TRUE;
+					if (flag == VCOCarryUsage || flag == VCONotEqualUsage) return FALSE;
+					break;
+				case RSP_VECTOR_VAND:
 				case RSP_VECTOR_VOR:
 				case RSP_VECTOR_VXOR:
 				case RSP_VECTOR_VRCP:
 				case RSP_VECTOR_VRCPL:
 				case RSP_VECTOR_VRCPH:
 				case RSP_VECTOR_VMOV:
+				case RSP_VECTOR_VRSQ:
 				case RSP_VECTOR_VRSQL:
 				case RSP_VECTOR_VRSQH:
 					break;
@@ -1326,6 +1342,20 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 					}
 					break;
 				case RSP_COP2_MT:
+					break;
+				case RSP_COP2_CT:
+					switch ((RspOp.OP.R.rd & 0x03)) {
+					case 0:
+						if (flag == VCOCarryUsage || flag == VCONotEqualUsage) return FALSE;
+						break;
+					case 1:
+						if (flag == VCCGreaterUsage || flag == VCCLessUsage) return FALSE;
+						break;
+					case 2:
+					case 3:
+						if (flag == VCEUsage) return FALSE;
+						break;
+					}
 					break;
 				default:
 					RspCompilerWarning("Unkown opcode in WriteToFlag\n%s", RSPOpcodeName(RspOp.OP.Hex, PC));
@@ -1357,7 +1387,9 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 			break;
 		case RSP_SC2:
 			switch (RspOp.OP.R.rd) {
+			case RSP_LSC2_BV:
 			case RSP_LSC2_SV:
+			case RSP_LSC2_LV:
 			case RSP_LSC2_DV:
 			case RSP_LSC2_QV:
 			case RSP_LSC2_PV:
