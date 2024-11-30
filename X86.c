@@ -38,6 +38,7 @@ static BOOL mmxSupported = FALSE;
 static BOOL mmx2Supported = FALSE;
 static BOOL sseSupported = FALSE;
 static BOOL sse2Supported = FALSE;
+static BOOL ssse3Supported = FALSE;
 static BOOL sse41Supported = FALSE;
 static BOOL avxSupported = FALSE;
 static BOOL avx2Supported = FALSE;
@@ -90,6 +91,9 @@ void DetectCpuSpecs(void) {
 	} else {
 		ConditionalMove = FALSE;
 	}
+	if (ECX_Features & 0x00000200) {
+		ssse3Supported = TRUE;
+	}
 	if (ECX_Features & 0x00080000) {
 		sse41Supported = TRUE;
 	}
@@ -132,6 +136,10 @@ BOOL IsSSESupported(void) {
 
 BOOL IsSSE2Supported(void) {
 	return sse2Supported;
+}
+
+BOOL IsSSSE3Supported(void) {
+	return ssse3Supported;
 }
 
 BOOL IsSSE41Supported(void) {

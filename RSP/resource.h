@@ -292,6 +292,8 @@
 #define IDC_CHECK_SSE41                 1281
 #define IDC_CHECK_AVX                   1282
 #define IDC_CHECK_AVX2                  1283
+#define IDC_CHECK_SSDE3                 1284
+#define IDC_CHECK_SSSE3                 1284
 #define ID_RSPCOMMANDS                  5001
 #define ID_RSPREGISTERS                 5002
 #define ID_PROFILING_ON                 5003

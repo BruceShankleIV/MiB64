@@ -72,6 +72,7 @@ BOOL IsMMXSupported(void);
 BOOL IsMMX2Supported(void);
 BOOL IsSSESupported(void);
 BOOL IsSSE2Supported(void);
+BOOL IsSSSE3Supported(void);
 BOOL IsSSE41Supported(void);
 BOOL IsAVXSupported(void);
 BOOL IsAVX2Supported(void);
@@ -401,6 +402,7 @@ void Sse2CompareEqualWordRegToReg	( BYTE** code, int Dest, int Source );
 void Sse2CompareGreaterWordRegToReg	( BYTE** code, int Dest, int Source );
 void Sse2CompareGreaterDWordRegToReg( BYTE** code, int Dest, int Source );
 void Sse2MoveDWordVariableToReg		( BYTE** code, int Dest, void * Variable, char * VariableName );
+void Sse2MoveRegToDWordReg			( BYTE** code, int Dest, int Source );
 void Sse2MoveQWordRegToReg			( BYTE** code, int Dest, int Source );
 void Sse2MoveSxWordRegToDWordReg	( BYTE** code, int Dest, int Source, BOOL SSE41Supported );
 void Sse2PackSignedDWordRegToWordReg( BYTE** code, int Dest, int Source );
@@ -437,6 +439,8 @@ void Sse2ShuffleLowWordsMemoryToReg	( BYTE** code, int Dest, void * Variable, ch
 void Sse2ShuffleLowWordsRegToReg	( BYTE** code, int Dest, int Source, BYTE Immed );
 void Sse2ShuffleHighWordsMemoryToReg( BYTE** code, int Dest, void * Variable, char * VariableName, BYTE Immed );
 void Sse2ShuffleHighWordsRegToReg	( BYTE** code, int Dest, int Source, BYTE Immed );
+
+void Ssse3PHorizontalAddRegToReg	( BYTE** code, int Dest, int Source );
 
 void Sse41PackUnsignedDWordRegToWordReg( BYTE** code, int Dest, int Source );
 void Sse41PBlendRegToRegWithXMM0Mask( BYTE** code, int Dest, int Source );
