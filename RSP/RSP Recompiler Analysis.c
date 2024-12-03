@@ -1258,6 +1258,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 		case RSP_ANDI:
 		case RSP_ORI:
 		case RSP_XORI:
+		case RSP_LUI:
 		case RSP_CP0:
 			break;
 		case RSP_CP2:

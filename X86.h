@@ -430,6 +430,7 @@ void Sse2PsrldImmed					( BYTE** code, int Dest, BYTE Immed );
 void Sse2PsrlwImmed					( BYTE** code, int Dest, BYTE Immed );
 void Sse2PsubdRegToReg				( BYTE** code, int Dest, int Source );
 void Sse2PsubswRegToReg				( BYTE** code, int Dest, int Source );
+void Sse2PsubuswRegToReg			( BYTE** code, int Dest, int Source );
 void Sse2PsubwRegToReg				( BYTE** code, int Dest, int Source );
 void Sse2PunpckHighWordsRegToReg	( BYTE** code, int Dest, int Source );
 void Sse2PunpckLowWordsRegToReg		( BYTE** code, int Dest, int Source );

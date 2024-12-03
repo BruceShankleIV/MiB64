@@ -8789,7 +8789,7 @@ static BOOL Compile_Vector_VADDC_AVX(BOOL writeToVectorDest, BOOL writeToAccum, 
 		constInitialized = TRUE;
 	}
 
-	/* Do our SSE checks here */
+	/* Do our AVX checks here */
 	if (IsAvxEnabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
 		return FALSE;
 
@@ -8918,13 +8918,122 @@ void CompileRsp_Vector_VADDC ( void ) {
 	}
 }
 
+static BOOL Compile_Vector_VSUBC_SSE2(BOOL writeToVectorDest, BOOL writeToAccum, BOOL writeToCarryFlag, BOOL writeToNeqFlag) {
+	char Reg[256];
+	static VECTOR flagMask, flagNeqMask, flagCarryMask;
+	static BOOL constInitialized = FALSE;
+
+	if (!constInitialized) {
+		for (int i = 0; i < 8; ++i) {
+			flagCarryMask.UHW[i] = 1 << (7 - i);
+			flagNeqMask.UHW[i] = 1 << (15 - i);
+			flagMask.UHW[i] = flagCarryMask.UHW[i] | flagNeqMask.UHW[i];
+		}
+		constInitialized = TRUE;
+	}
+
+	/* Do our SSE checks here */
+	if (IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
+		return FALSE;
+
+	// load vs and vt
+	sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vs);
+	SseMoveAlignedVariableToReg(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vs].HW[0], Reg, x86_XMM0, SseType_QuadWord, TRUE);
+
+	if ((RSPOpC.OP.V.element & 0xF) < 2) {
+		sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vt);
+		SseMoveAlignedVariableToReg(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vt].UHW[0], Reg, x86_XMM1, SseType_QuadWord, TRUE);
+	}
+	else if ((RSPOpC.OP.V.element & 0xF) >= 8) {
+		RSP_Element2Sse(x86_XMM1);
+	}
+	else {
+		RSP_MultiElement2Sse(x86_XMM1);
+	}
+
+	if (writeToCarryFlag == TRUE) {
+		SseMoveRegToReg(&RspRecompPos, x86_XMM2, x86_XMM0, SseType_QuadWord, TRUE);
+	}
+
+	Sse2PsubwRegToReg(&RspRecompPos, x86_XMM0, x86_XMM1);
+
+	if (writeToVectorDest == TRUE) {
+		sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vd);
+		SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM0, &RSP_Vect[RSPOpC.OP.V.vd].UHW[0], Reg, SseType_QuadWord, TRUE);
+	}
+
+	if (writeToAccum == TRUE) {
+		SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM0, &RSP_ACCUM_LOW.UHW[0], "RSP_ACCUM_LOW", SseType_QuadWord, TRUE);
+	}
+
+	if (writeToCarryFlag == TRUE || writeToNeqFlag == TRUE) {
+		Sse2CompareEqualDWordRegToReg(&RspRecompPos, x86_XMM6, x86_XMM6);
+	}
+
+	if (writeToNeqFlag == TRUE) {
+		Sse2PxorRegToReg(&RspRecompPos, x86_XMM7, x86_XMM7);
+
+		if (writeToCarryFlag == TRUE) {
+			Sse2CompareEqualWordRegToReg(&RspRecompPos, x86_XMM7, x86_XMM0);
+			Sse2PxorRegToReg(&RspRecompPos, x86_XMM7, x86_XMM6);
+			Sse2PsllwImmed(&RspRecompPos, x86_XMM7, 8);
+		} else {
+			Sse2CompareEqualWordRegToReg(&RspRecompPos, x86_XMM0, x86_XMM7);
+			Sse2PxorRegToReg(&RspRecompPos, x86_XMM0, x86_XMM6);
+			Sse2PandVariableToReg(&RspRecompPos, x86_XMM0, &flagNeqMask, "flagNegMask");
+		}
+	}
+
+	if (writeToCarryFlag == TRUE) {
+		Sse2PsubuswRegToReg(&RspRecompPos, x86_XMM2, x86_XMM1);
+		Sse2CompareEqualWordRegToReg(&RspRecompPos, x86_XMM0, x86_XMM2);
+		Sse2PxorRegToReg(&RspRecompPos, x86_XMM0, x86_XMM6);
+
+		if (writeToNeqFlag == TRUE) {
+			Sse2PsrlwImmed(&RspRecompPos, x86_XMM0, 8);
+			Sse2PorRegToReg(&RspRecompPos, x86_XMM0, x86_XMM7);
+			Sse2PandVariableToReg(&RspRecompPos, x86_XMM0, &flagMask, "flagMask");
+		} else {
+			Sse2PandVariableToReg(&RspRecompPos, x86_XMM0, &flagCarryMask, "flagCarryMask");
+		}
+	}
+
+	if (writeToNeqFlag == TRUE || writeToCarryFlag == TRUE) {
+		if (IsSsse3Enabled == TRUE) {
+			Ssse3PHorizontalAddRegToReg(&RspRecompPos, x86_XMM0, x86_XMM0);
+			Ssse3PHorizontalAddRegToReg(&RspRecompPos, x86_XMM0, x86_XMM0);
+			Ssse3PHorizontalAddRegToReg(&RspRecompPos, x86_XMM0, x86_XMM0);
+		}
+		else {
+			SseMoveRegToReg(&RspRecompPos, x86_XMM1, x86_XMM0, SseType_QuadWord, TRUE);
+			Sse2ShuffleDWordsRegToReg(&RspRecompPos, x86_XMM1, x86_XMM1, _MMX_SHUFFLE(3, 2, 3, 2));
+			Sse2PorRegToReg(&RspRecompPos, x86_XMM0, x86_XMM1);
+
+			SseMoveRegToReg(&RspRecompPos, x86_XMM1, x86_XMM0, SseType_QuadWord, TRUE);
+			Sse2ShuffleLowWordsRegToReg(&RspRecompPos, x86_XMM1, x86_XMM1, _MMX_SHUFFLE(3, 2, 3, 2));
+			Sse2PorRegToReg(&RspRecompPos, x86_XMM0, x86_XMM1);
+
+			SseMoveRegToReg(&RspRecompPos, x86_XMM1, x86_XMM0, SseType_QuadWord, TRUE);
+			Sse2ShuffleLowWordsRegToReg(&RspRecompPos, x86_XMM1, x86_XMM1, _MMX_SHUFFLE(1, 1, 1, 1));
+			Sse2PorRegToReg(&RspRecompPos, x86_XMM0, x86_XMM1);
+		}
+
+		Sse2MoveRegToDWordReg(&RspRecompPos, x86_EAX, x86_XMM0);
+		MoveX86regToVariable(&RspRecompPos, x86_EAX, &RspVCO, "RspVCO");
+	}
+
+	return TRUE;
+}
+
 void CompileRsp_Vector_VSUBC ( void ) {
 	char Reg[256];
 	int count, el, del;
 
-	/*BOOL bWriteToDest = WriteToVectorDest(RSPOpC.sa, CompilePC);
-	BOOL bWriteToAccum = WriteToAccum(Low16BitAccum, CompilePC);
-	BOOL bElement = ((RSPOpC.rs & 0x0f) >= 8) ? TRUE : FALSE;*/
+	BOOL bWriteToDest = WriteToVectorDest(RSPOpC.OP.V.vd, RspCompilePC);
+	BOOL bWriteToAccum = WriteToAccum(Low16BitAccum, RspCompilePC);
+	BOOL bElement = ((RSPOpC.OP.V.element & 0x0f) >= 8) ? TRUE : FALSE;
+	BOOL bWriteToCarryFlag = WriteToFlag(VCOCarryUsage, RspCompilePC);
+	BOOL bWriteToNeqFlag = WriteToFlag(VCONotEqualUsage, RspCompilePC);
 	
 	#ifndef CompileVsubc
 	InterpreterFallback((void*)RSP_Vector_VSUBC,"RSP_Vector_VSUBC"); return;
@@ -8932,14 +9041,30 @@ void CompileRsp_Vector_VSUBC ( void ) {
 
 	RSP_CPU_Message("  %X %s",RspCompilePC,RSPOpcodeName(RSPOpC.OP.Hex,RspCompilePC));
 
-	/*if (bElement == TRUE) {
-		del = (RSPOpC.rs & 0x07) ^ 7;
-		sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.rt, del);
-		MoveZxVariableToX86regHalf(&RSP_Vect[RSPOpC.rt].HW[del], Reg, x86_EBX);
+	if (bWriteToDest == FALSE && bWriteToAccum == FALSE && bWriteToCarryFlag == FALSE && bWriteToNeqFlag == FALSE) {
+		return;
+	}
+
+	/*if (TRUE == Compile_Vector_VSUBC_AVX(bWriteToDest, bWriteToAccum, bWriteToFlag)) {
+		return;
 	}*/
 
-	/* Initialize flag register */
-	XorX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_ECX);
+	if (TRUE == Compile_Vector_VSUBC_SSE2(bWriteToDest, bWriteToAccum, bWriteToCarryFlag, bWriteToNeqFlag)) {
+		return;
+	}
+
+	if (bElement == TRUE) {
+		del = (RSPOpC.OP.V.element & 0x07) ^ 7;
+		sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vt, del);
+		MoveZxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vt].HW[del], Reg, x86_EBX);
+	}
+
+	if (bWriteToCarryFlag == TRUE || bWriteToNeqFlag == TRUE) {
+		/* Initialize flag register */
+		XorX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_ECX);
+		// clear setnz destination
+		XorX86RegToX86Reg(&RspRecompPos, x86_EDX, x86_EDX);
+	}
 
 	for (count = 0; count < 8; count++) {
 		RSP_CPU_Message("     Iteration: %i", count);
@@ -8949,35 +9074,42 @@ void CompileRsp_Vector_VSUBC ( void ) {
 		sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vs, el);
 		MoveZxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vs].HW[el], Reg, x86_EAX);
 
-		/*if (bElement == FALSE)*/ {
+		if (bElement == FALSE) {
 			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vt, del);
 			MoveZxVariableToX86regHalf(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vt].HW[del], Reg, x86_EBX);
 		}
 
 		SubX86RegToX86Reg(&RspRecompPos, x86_EAX, x86_EBX);
 
-		XorX86RegToX86Reg(&RspRecompPos, x86_EDX, x86_EDX);
-		TestConstToX86Reg(&RspRecompPos, 0x0000FFFF, x86_EAX);
-		Setnz(&RspRecompPos, x86_EDX);
-		ShiftLeftSignImmed(&RspRecompPos, x86_EDX, (BYTE)(15 - el));
-		OrX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_EDX);
+		if (bWriteToNeqFlag == TRUE) {
+			TestConstToX86Reg(&RspRecompPos, 0x0000FFFF, x86_EAX);
+			Setnz(&RspRecompPos, x86_EDX);
+			ShiftLeftSignImmed(&RspRecompPos, x86_EDX, (BYTE)(15 - el));
+			OrX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_EDX);
+		}
 
-		XorX86RegToX86Reg(&RspRecompPos, x86_EDX, x86_EDX);
-		TestConstToX86Reg(&RspRecompPos, 0xFFFF0000, x86_EAX);
-		Setnz(&RspRecompPos, x86_EDX);
-		ShiftLeftSignImmed(&RspRecompPos, x86_EDX, (BYTE)(7 - el));
-		OrX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_EDX);
+		if (bWriteToNeqFlag == TRUE && bWriteToCarryFlag == TRUE) {
+			XorX86RegToX86Reg(&RspRecompPos, x86_EDX, x86_EDX);
+		}
+		if (bWriteToCarryFlag == TRUE) {
+			TestConstToX86Reg(&RspRecompPos, 0xFFFF0000, x86_EAX);
+			Setnz(&RspRecompPos, x86_EDX);
+			ShiftLeftSignImmed(&RspRecompPos, x86_EDX, (BYTE)(7 - el));
+			OrX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_EDX);
+		}
 
-		/*if (bWriteToAccum == TRUE)*/ {
+		if (bWriteToAccum == TRUE) {
 			sprintf(Reg, "RSP_ACCUM_LOW.UHW[%i]", el);
 			MoveX86regHalfToVariable(&RspRecompPos, x86_EAX, &RSP_ACCUM_LOW.UHW[el], Reg);
 		}
-		/*if (bWriteToDest == TRUE)*/ {
+		if (bWriteToDest == TRUE) {
 			sprintf(Reg, "RSP_Vect[%i].HW[%i]", RSPOpC.OP.V.vd, el);
 			MoveX86regHalfToVariable(&RspRecompPos, x86_EAX, &RSP_Vect[RSPOpC.OP.V.vd].HW[el], Reg);
 		}
 	}
-	MoveX86regToVariable(&RspRecompPos, x86_ECX, &RspVCO, "RspVCO");
+	if (bWriteToCarryFlag == TRUE || bWriteToNeqFlag == TRUE) {
+		MoveX86regToVariable(&RspRecompPos, x86_ECX, &RspVCO, "RspVCO");
+	}
 }
 
 void CompileRsp_Vector_VADDB ( void ) {
