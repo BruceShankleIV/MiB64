@@ -507,6 +507,39 @@ void AvxVPandRegToReg256(BYTE** code, int Dest, int Src1, int Src2) {
 	PUTDST8(*code, 0xc0 | x86Command);
 }
 
+void AvxVPandVariableToReg128(BYTE** code, int Dest, int Src1, void* Variable, char* VariableName) {
+	BYTE x86Command = 0;
+	BYTE x86Src1 = 0;
+
+	RSP_CPU_Message("      vpand %s, %s, xmmmword ptr [%s]", sse_Name(Dest), sse_Name(Src1), VariableName);
+
+	switch (Src1) {
+	case x86_XMM0: x86Src1 = 0xf9; break;
+	case x86_XMM1: x86Src1 = 0xf1; break;
+	case x86_XMM2: x86Src1 = 0xe9; break;
+	case x86_XMM3: x86Src1 = 0xe1; break;
+	case x86_XMM4: x86Src1 = 0xd9; break;
+	case x86_XMM5: x86Src1 = 0xd1; break;
+	case x86_XMM6: x86Src1 = 0xc9; break;
+	case x86_XMM7: x86Src1 = 0xc1; break;
+	}
+	switch (Dest) {
+	case x86_XMM0: x86Command = 0x05; break;
+	case x86_XMM1: x86Command = 0x0D; break;
+	case x86_XMM2: x86Command = 0x15; break;
+	case x86_XMM3: x86Command = 0x1D; break;
+	case x86_XMM4: x86Command = 0x25; break;
+	case x86_XMM5: x86Command = 0x2D; break;
+	case x86_XMM6: x86Command = 0x35; break;
+	case x86_XMM7: x86Command = 0x3D; break;
+	}
+	PUTDST8(*code, 0xc5);
+	PUTDST8(*code, x86Src1);
+	PUTDST8(*code, 0xdb);
+	PUTDST8(*code, x86Command);
+	PUTDST32(*code, Variable);
+}
+
 void AvxVPandnRegToReg128(BYTE** code, int Dest, int Src1, int Src2) {
 	BYTE x86Command = 0;
 	BYTE x86Src1 = 0;

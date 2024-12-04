@@ -9025,6 +9025,94 @@ static BOOL Compile_Vector_VSUBC_SSE2(BOOL writeToVectorDest, BOOL writeToAccum,
 	return TRUE;
 }
 
+static BOOL Compile_Vector_VSUBC_AVX(BOOL writeToVectorDest, BOOL writeToAccum, BOOL writeToCarryFlag, BOOL writeToNeqFlag) {
+	char Reg[256];
+	static VECTOR flagMask, flagNeqMask, flagCarryMask;
+	static BOOL constInitialized = FALSE;
+
+	if (!constInitialized) {
+		for (int i = 0; i < 8; ++i) {
+			flagCarryMask.UHW[i] = 1 << (7 - i);
+			flagNeqMask.UHW[i] = 1 << (15 - i);
+			flagMask.UHW[i] = flagCarryMask.UHW[i] | flagNeqMask.UHW[i];
+		}
+		constInitialized = TRUE;
+	}
+
+	/* Do our SSE checks here */
+	if (IsAvxEnabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
+		return FALSE;
+
+	// load vs and vt
+	sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vs);
+	SseMoveAlignedVariableToReg(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vs].HW[0], Reg, x86_XMM0, SseType_QuadWord, TRUE);
+
+	if ((RSPOpC.OP.V.element & 0xF) < 2) {
+		sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vt);
+		SseMoveAlignedVariableToReg(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vt].UHW[0], Reg, x86_XMM1, SseType_QuadWord, TRUE);
+	}
+	else if ((RSPOpC.OP.V.element & 0xF) >= 8) {
+		RSP_Element2Sse(x86_XMM1);
+	}
+	else {
+		RSP_MultiElement2Sse(x86_XMM1);
+	}
+
+	AvxVPSubwRegToReg128(&RspRecompPos, x86_XMM2, x86_XMM0, x86_XMM1);
+
+	if (writeToVectorDest == TRUE) {
+		sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vd);
+		SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM2, &RSP_Vect[RSPOpC.OP.V.vd].UHW[0], Reg, SseType_QuadWord, TRUE);
+	}
+
+	if (writeToAccum == TRUE) {
+		SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM2, &RSP_ACCUM_LOW.UHW[0], "RSP_ACCUM_LOW", SseType_QuadWord, TRUE);
+	}
+
+	if (writeToCarryFlag == TRUE || writeToNeqFlag == TRUE) {
+		Sse2CompareEqualDWordRegToReg(&RspRecompPos, x86_XMM6, x86_XMM6);
+	}
+
+	if (writeToNeqFlag == TRUE) {
+		Sse2PxorRegToReg(&RspRecompPos, x86_XMM7, x86_XMM7);
+		Sse2CompareEqualWordRegToReg(&RspRecompPos, x86_XMM7, x86_XMM2);
+		Sse2PxorRegToReg(&RspRecompPos, x86_XMM7, x86_XMM6);
+
+		if (writeToCarryFlag == TRUE) {
+			Sse2PsllwImmed(&RspRecompPos, x86_XMM7, 8);
+		}
+		else {
+			AvxVPandVariableToReg128(&RspRecompPos, x86_XMM0, x86_XMM7, &flagNeqMask, "flagNegMask");
+		}
+	}
+
+	if (writeToCarryFlag == TRUE) {
+		Sse2PsubuswRegToReg(&RspRecompPos, x86_XMM0, x86_XMM1);
+		Sse2CompareEqualWordRegToReg(&RspRecompPos, x86_XMM0, x86_XMM2);
+		Sse2PxorRegToReg(&RspRecompPos, x86_XMM0, x86_XMM6);
+
+		if (writeToNeqFlag == TRUE) {
+			Sse2PsrlwImmed(&RspRecompPos, x86_XMM0, 8);
+			Sse2PorRegToReg(&RspRecompPos, x86_XMM0, x86_XMM7);
+			Sse2PandVariableToReg(&RspRecompPos, x86_XMM0, &flagMask, "flagMask");
+		}
+		else {
+			Sse2PandVariableToReg(&RspRecompPos, x86_XMM0, &flagCarryMask, "flagCarryMask");
+		}
+	}
+
+	if (writeToNeqFlag == TRUE || writeToCarryFlag == TRUE) {
+		Ssse3PHorizontalAddRegToReg(&RspRecompPos, x86_XMM0, x86_XMM0);
+		Ssse3PHorizontalAddRegToReg(&RspRecompPos, x86_XMM0, x86_XMM0);
+		Ssse3PHorizontalAddRegToReg(&RspRecompPos, x86_XMM0, x86_XMM0);
+
+		Sse2MoveRegToDWordReg(&RspRecompPos, x86_EAX, x86_XMM0);
+		MoveX86regToVariable(&RspRecompPos, x86_EAX, &RspVCO, "RspVCO");
+	}
+
+	return TRUE;
+}
+
 void CompileRsp_Vector_VSUBC ( void ) {
 	char Reg[256];
 	int count, el, del;
@@ -9045,9 +9133,9 @@ void CompileRsp_Vector_VSUBC ( void ) {
 		return;
 	}
 
-	/*if (TRUE == Compile_Vector_VSUBC_AVX(bWriteToDest, bWriteToAccum, bWriteToFlag)) {
+	if (TRUE == Compile_Vector_VSUBC_AVX(bWriteToDest, bWriteToAccum, bWriteToCarryFlag, bWriteToNeqFlag)) {
 		return;
-	}*/
+	}
 
 	if (TRUE == Compile_Vector_VSUBC_SSE2(bWriteToDest, bWriteToAccum, bWriteToCarryFlag, bWriteToNeqFlag)) {
 		return;
@@ -9113,31 +9201,59 @@ void CompileRsp_Vector_VSUBC ( void ) {
 }
 
 void CompileRsp_Vector_VADDB ( void ) {
+#ifndef CompileAddAndClear
 	InterpreterFallback((void*)RSP_Vector_VADDB, "RSP_Vector_VADDB");
+	return;
+#endif
+	CompileRsp_Vector_AddAndClear();
 }
 
 void CompileRsp_Vector_VSUBB ( void ) {
+#ifndef CompileAddAndClear
 	InterpreterFallback((void*)RSP_Vector_VSUBB, "RSP_Vector_VSUBB");
+	return;
+#endif
+	CompileRsp_Vector_AddAndClear();
 }
 
 void CompileRsp_Vector_VACCB(void) {
+#ifndef CompileAddAndClear
 	InterpreterFallback((void*)RSP_Vector_VACCB, "RSP_Vector_VACCB");
+	return;
+#endif
+	CompileRsp_Vector_AddAndClear();
 }
 
 void CompileRsp_Vector_VSUCB(void) {
+#ifndef CompileAddAndClear
 	InterpreterFallback((void*)RSP_Vector_VSUCB, "RSP_Vector_VSUCB");
+	return;
+#endif
+	CompileRsp_Vector_AddAndClear();
 }
 
 void CompileRsp_Vector_VSAD(void) {
+#ifndef CompileAddAndClear
 	InterpreterFallback((void*)RSP_Vector_VSAD, "RSP_Vector_VSAD");
+	return;
+#endif
+	CompileRsp_Vector_AddAndClear();
 }
 
 void CompileRsp_Vector_VSAC(void) {
+#ifndef CompileAddAndClear
 	InterpreterFallback((void*)RSP_Vector_VSAC, "RSP_Vector_VSAC");
+	return;
+#endif
+	CompileRsp_Vector_AddAndClear();
 }
 
 void CompileRsp_Vector_VSUM(void) {
+#ifndef CompileAddAndClear
 	InterpreterFallback((void*)RSP_Vector_VSUM, "RSP_Vector_VSUM");
+	return;
+#endif
+	CompileRsp_Vector_AddAndClear();
 }
 
 void CompileRsp_Vector_VSAR ( void ) {

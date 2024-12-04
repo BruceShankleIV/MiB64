@@ -474,6 +474,7 @@ void AvxVPAddswRegToReg128			( BYTE** code, int Dest, int Src1, int Src2 );
 void AvxVPAddwRegToReg128			( BYTE** code, int Dest, int Src1, int Src2 );
 void AvxVPandRegToReg128			( BYTE** code, int Dest, int Src1, int Src2 );
 void AvxVPandRegToReg256			( BYTE** code, int Dest, int Src1, int Src2 );
+void AvxVPandVariableToReg128		( BYTE** code, int Dest, int Src1, void* Variable, char* VariableName );
 void AvxVPandnRegToReg128			( BYTE** code, int Dest, int Src1, int Src2 );
 void AvxVPandnRegToReg256			( BYTE** code, int Dest, int Src1, int Src2 );
 void AvxVPBlendvbRegToReg128		( BYTE** code, int Dest, int Src1, int Src2, int Src3Mask );
