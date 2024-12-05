@@ -93,8 +93,8 @@ DWORD BeginOfCurrentSubBlock = 0;
 #endif
 #ifdef RSP_VectorMisc
 /*#	define CompileVrsqh
-#	define CompileVrcph
-#	define CompileVsaw*/		/* Verified 12/17/2000 - Jabo */
+#	define CompileVrcph*/
+#	define CompileVsar		/* Verified 12/17/2000 - Jabo */
 #	define CompileVabs		/* Verified 12/15/2000 - Jabo */
 /*#	define CompileVmov*/		/* Verified 12/17/2000 - Jabo */
 /*#	define CompileVxor*/		/* Verified 12/17/2000 - Jabo */
@@ -9256,58 +9256,104 @@ void CompileRsp_Vector_VSUM(void) {
 	CompileRsp_Vector_AddAndClear();
 }
 
+static BOOL Compile_Vector_VSAR_SSE2() {
+	char Reg[256];
+	char Part[256];
+	VECTOR* vec;
+
+	/* Do our SSE checks here */
+	if (IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
+		return FALSE;
+
+	switch ((RSPOpC.OP.V.element & 0xF)) {
+	case 8:
+		vec = &RSP_ACCUM_HIGH;
+		sprintf(Part, "HIGH");
+		break;
+	case 9:
+		vec = &RSP_ACCUM_MID;
+		sprintf(Part, "MID");
+		break;
+	case 10:
+		vec = &RSP_ACCUM_LOW;
+		sprintf(Part, "LOW");
+		break;
+	default:
+		Sse2PxorRegToReg(&RspRecompPos, x86_XMM0, x86_XMM0);
+		SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM0, &RSP_Vect[RSPOpC.OP.V.vd].UHW[0], Reg, SseType_QuadWord, TRUE);
+		return TRUE;
+	}
+
+	// load accumulator
+	sprintf(Reg, "RSP_ACCUM_%s.W[0]", Part);
+	SseMoveAlignedVariableToReg(&RspRecompPos, &vec->UHW[0], Reg, x86_XMM0, SseType_QuadWord, TRUE);
+
+	// store result
+	sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vd);
+	SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM0, &RSP_Vect[RSPOpC.OP.V.vd].UHW[0], Reg, SseType_QuadWord, TRUE);
+
+	return TRUE;
+}
+
 void CompileRsp_Vector_VSAR ( void ) {
-	/*char Reg[256];
-	DWORD Word;*/
+	char Reg[256];
+	char Part[256];
+	VECTOR* vec;
+
+	BOOL bWriteToDest = WriteToVectorDest(RSPOpC.OP.V.vd, RspCompilePC);
 
 	#ifndef CompileVsar
 	InterpreterFallback((void*)RSP_Vector_VSAR,"RSP_Vector_VSAR"); return;
 	#endif
 
-	/*CPU_Message("  %X %s",CompilePC,RSPOpcodeName(RSPOpC.Hex,CompilePC));
+	RSP_CPU_Message("  %X %s",RspCompilePC,RSPOpcodeName(RSPOpC.OP.Hex,RspCompilePC));
 
-	switch ((RSPOpC.rs & 0xF)) {
-	case 8: Word = 3; break;
-	case 9: Word = 2; break;
-	case 10: Word = 1; break;
-	default:
-		MoveConstToVariable(0, &RSP_Vect[RSPOpC.sa].DW[1], "RSP_Vect[RSPOpC.sa].DW[1]");
-		MoveConstToVariable(0, &RSP_Vect[RSPOpC.sa].DW[0], "RSP_Vect[RSPOpC.sa].DW[0]");
+	if (bWriteToDest == FALSE) {
 		return;
 	}
 
-	sprintf(Reg, "RSP_ACCUM[1].HW[%i]", Word);
-	MoveVariableToX86regHalf(&RSP_ACCUM[1].HW[Word], Reg, x86_EAX);
-	sprintf(Reg, "RSP_ACCUM[3].HW[%i]", Word);
-	MoveVariableToX86regHalf(&RSP_ACCUM[3].HW[Word], Reg, x86_EBX);
-	sprintf(Reg, "RSP_ACCUM[5].HW[%i]", Word);
-	MoveVariableToX86regHalf(&RSP_ACCUM[5].HW[Word], Reg, x86_ECX);
-	sprintf(Reg, "RSP_ACCUM[7].HW[%i]", Word);
-	MoveVariableToX86regHalf(&RSP_ACCUM[7].HW[Word], Reg, x86_EDX);
+	if (TRUE == Compile_Vector_VSAR_SSE2()) {
+		return;
+	}
 
-	ShiftLeftSignImmed(x86_EAX, 16);
-	ShiftLeftSignImmed(x86_EBX, 16);
-	ShiftLeftSignImmed(x86_ECX, 16);
-	ShiftLeftSignImmed(x86_EDX, 16);
+	switch ((RSPOpC.OP.V.element & 0xF)) {
+	case 8:
+		vec = &RSP_ACCUM_HIGH;
+		sprintf(Part, "HIGH");
+		break;
+	case 9:
+		vec = &RSP_ACCUM_MID;
+		sprintf(Part, "MID");
+		break;
+	case 10:
+		vec = &RSP_ACCUM_LOW;
+		sprintf(Part, "LOW");
+		break;
+	default:
+		MoveConstToVariable(&RspRecompPos, 0, &RSP_Vect[RSPOpC.OP.V.vd].W[3], "RSP_Vect[RSPOpC.OP.V.vd].W[3]");
+		MoveConstToVariable(&RspRecompPos, 0, &RSP_Vect[RSPOpC.OP.V.vd].W[2], "RSP_Vect[RSPOpC.OP.V.vd].W[2]");
+		MoveConstToVariable(&RspRecompPos, 0, &RSP_Vect[RSPOpC.OP.V.vd].W[1], "RSP_Vect[RSPOpC.OP.V.vd].W[1]");
+		MoveConstToVariable(&RspRecompPos, 0, &RSP_Vect[RSPOpC.OP.V.vd].W[0], "RSP_Vect[RSPOpC.OP.V.vd].W[0]");
+		return;
+	}
 
-	sprintf(Reg, "RSP_ACCUM[0].HW[%i]", Word);
-	MoveVariableToX86regHalf(&RSP_ACCUM[0].HW[Word], Reg, x86_EAX);
-	sprintf(Reg, "RSP_ACCUM[2].HW[%i]", Word);
-	MoveVariableToX86regHalf(&RSP_ACCUM[2].HW[Word], Reg, x86_EBX);
-	sprintf(Reg, "RSP_ACCUM[4].HW[%i]", Word);
-	MoveVariableToX86regHalf(&RSP_ACCUM[4].HW[Word], Reg, x86_ECX);
-	sprintf(Reg, "RSP_ACCUM[6].HW[%i]", Word);
-	MoveVariableToX86regHalf(&RSP_ACCUM[6].HW[Word], Reg, x86_EDX);
+	sprintf(Reg, "RSP_ACCUM_%s.W[0]", Part);
+	MoveVariableToX86reg(&RspRecompPos, &vec->W[0], Reg, x86_EAX);
+	sprintf(Reg, "RSP_ACCUM_%s.W[1]", Part);
+	MoveVariableToX86reg(&RspRecompPos, &vec->W[1], Reg, x86_EBX);
+	sprintf(Reg, "RSP_ACCUM_%s.W[2]", Part);
+	MoveVariableToX86reg(&RspRecompPos, &vec->W[2], Reg, x86_ECX);
+	sprintf(Reg, "RSP_ACCUM_%s.W[3]", Part);
+	MoveVariableToX86reg(&RspRecompPos, &vec->W[3], Reg, x86_EDX);
 
-	sprintf(Reg, "RSP_Vect[%i].HW[0]", RSPOpC.sa);
-	MoveX86regToVariable(x86_EAX, &RSP_Vect[RSPOpC.sa].HW[0], Reg);
-	sprintf(Reg, "RSP_Vect[%i].HW[2]", RSPOpC.sa);
-	MoveX86regToVariable(x86_EBX, &RSP_Vect[RSPOpC.sa].HW[2], Reg);
-	sprintf(Reg, "RSP_Vect[%i].HW[4]", RSPOpC.sa);
-	MoveX86regToVariable(x86_ECX, &RSP_Vect[RSPOpC.sa].HW[4], Reg);
-	sprintf(Reg, "RSP_Vect[%i].HW[6]", RSPOpC.sa);
-	MoveX86regToVariable(x86_EDX, &RSP_Vect[RSPOpC.sa].HW[6], Reg);*/
-	LogMessage("TODO: CompileRsp_Vector_VSAR");
+	sprintf(Reg, "RSP_Vect[%i].W[0]", RSPOpC.OP.V.vd);
+	MoveX86regToVariable(&RspRecompPos, x86_EAX, &RSP_Vect[RSPOpC.OP.V.vd].W[0], Reg);
+	sprintf(Reg, "RSP_Vect[%i].W[1]", RSPOpC.OP.V.vd);
+	MoveX86regToVariable(&RspRecompPos, x86_EBX, &RSP_Vect[RSPOpC.OP.V.vd].W[1], Reg);
+	sprintf(Reg, "RSP_Vect[%i].W[2]", RSPOpC.OP.V.vd);
+	MoveX86regToVariable(&RspRecompPos, x86_ECX, &RSP_Vect[RSPOpC.OP.V.vd].W[2], Reg);
+	sprintf(Reg, "RSP_Vect[%i].W[3]", RSPOpC.OP.V.vd);
+	MoveX86regToVariable(&RspRecompPos, x86_EDX, &RSP_Vect[RSPOpC.OP.V.vd].W[3], Reg);
 }
 
 void CompileRsp_Vector_V30(void) {
