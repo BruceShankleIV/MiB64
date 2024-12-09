@@ -655,6 +655,29 @@ void AndX86RegToVariable(BYTE** code, void* Variable, char* VariableName, int x8
 	PUTDST32(*code, Variable);
 }
 
+void AndX86RegHighByteToX86RegByte(BYTE** code, int Destination, int Source) {
+	WORD x86Command = 0x0;
+
+	CPU_OR_RSP_Message(*code, "      and %s, %s", x86Byte_Name(Destination), x86HighByte_Name(Source));
+	switch (Destination) {
+	case x86_EAX: x86Command = 0x0020; break;
+	case x86_EBX: x86Command = 0x0320; break;
+	case x86_ECX: x86Command = 0x0120; break;
+	case x86_EDX: x86Command = 0x0220; break;
+	default:
+		DisplayError("and\nUnknown x86 Register");
+	}
+	switch (Source) {
+	case x86_EAX: x86Command += 0xE000; break;
+	case x86_EBX: x86Command += 0xF800; break;
+	case x86_ECX: x86Command += 0xE800; break;
+	case x86_EDX: x86Command += 0xF000; break;
+	default:
+		DisplayError("and\nUnknown x86 Register");
+	}
+	PUTDST16(*code, x86Command);
+}
+
 void AndX86RegToX86Reg(BYTE** code, int Destination, int Source) {
 	WORD x86Command = 0x0;
 
@@ -2749,6 +2772,32 @@ void MoveX86regToVariable(BYTE** code, int x86reg, void * Variable, char * Varia
 		DisplayError("MoveX86regToVariable\nUnknown x86 Register");
 	}
     PUTDST32(*code,Variable);
+}
+
+void MoveX86RegByteToX86RegHighByte(BYTE** code, int Source, int Destination) {
+	WORD x86Command = 0x0;
+
+	CPU_OR_RSP_Message(*code, "      mov %s, %s", x86HighByte_Name(Destination), x86Byte_Name(Source));
+
+	switch (Destination) {
+		\
+	case x86_EAX: x86Command = 0x0088; break;
+	case x86_EBX: x86Command = 0x0388; break;
+	case x86_ECX: x86Command = 0x0188; break;
+	case x86_EDX: x86Command = 0x0288; break;
+	default:
+		DisplayError("Seta\nUnknown x86 Register");
+	}
+
+	switch (Source) {
+	case x86_EAX: x86Command += 0xC400; break;
+	case x86_EBX: x86Command += 0xDC00; break;
+	case x86_ECX: x86Command += 0xCC00; break;
+	case x86_EDX: x86Command += 0xD400; break;
+	default:
+		DisplayError("Seta\nUnknown x86 Register");
+	}
+	PUTDST16(*code, x86Command);
 }
 
 void MoveX86RegToX86Reg(BYTE** code, int Source, int Destination) {

@@ -9414,13 +9414,10 @@ void CompileRsp_Vector_VLT ( void ) {
 			ShiftLeftSignImmed(&RspRecompPos, x86_EDX, (BYTE)(7 - el));
 		}
 
-		MoveX86RegToX86Reg(&RspRecompPos, x86_EDX, x86_EBX);
-		ShiftLeftSignImmed(&RspRecompPos, x86_EBX, 8);
-		OrX86RegToX86Reg(&RspRecompPos, x86_EDX, x86_EBX);
+		MoveX86RegByteToX86RegHighByte(&RspRecompPos, x86_EDX, x86_EDX);
 		AndVariableToX86Reg(&RspRecompPos, &RspVCO, "RspVCO", x86_EDX);
-		MoveX86RegToX86Reg(&RspRecompPos, x86_EDX, x86_EBX);
-		ShiftRightUnsignImmed(&RspRecompPos, x86_EBX, 8);
-		AndX86RegToX86Reg(&RspRecompPos, x86_EDX, x86_EBX);
+		AndX86RegHighByteToX86RegByte(&RspRecompPos, x86_EDX, x86_EDX);
+		AndConstToX86Reg(&RspRecompPos, x86_EDX, 0xFF);
 
 		OrX86RegToX86Reg(&RspRecompPos, x86_ESI, x86_EDX);
 		OrX86RegToX86Reg(&RspRecompPos, x86_ESI, x86_ECX);
