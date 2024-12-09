@@ -941,8 +941,8 @@ BOOL UseRspFlags (int flag, int PC) {
 			switch (RspOp.OP.R.funct) {
 			case RSP_SPECIAL_SLL:
 			case RSP_SPECIAL_SRL:
-			/*case RSP_SPECIAL_SRA:
-			case RSP_SPECIAL_SLLV:
+			case RSP_SPECIAL_SRA:
+			/*case RSP_SPECIAL_SLLV:
 			case RSP_SPECIAL_SRLV:
 			case RSP_SPECIAL_SRAV:*/
 			case RSP_SPECIAL_JALR:
@@ -981,8 +981,8 @@ BOOL UseRspFlags (int flag, int PC) {
 		case RSP_SLTIU:*/
 		case RSP_ANDI:
 		case RSP_ORI:
-		/*case RSP_XORI:
-		case RSP_LUI:
+		case RSP_XORI:
+		/*case RSP_LUI:
 		case RSP_CP0:*/
 			break;
 
@@ -1009,6 +1009,10 @@ BOOL UseRspFlags (int flag, int PC) {
 					}
 					break;
 				case RSP_VECTOR_VSUBC:
+					if (flag == VCOCarryUsage || flag == VCONotEqualUsage) {
+						return TRUE;
+					}
+					break;
 				case RSP_VECTOR_VADDC:
 					if (flag == VCOCarryUsage) {
 						return TRUE;
@@ -1281,6 +1285,8 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 				case RSP_VECTOR_VSUB:
 					if (flag == VCOCarryUsage) return TRUE;
 					if (flag == VCONotEqualUsage) return FALSE;
+					break;
+				case RSP_VECTOR_VABS:
 					break;
 				case RSP_VECTOR_VADDC:
 				case RSP_VECTOR_VSUBC:
