@@ -500,6 +500,7 @@ void AvxVPSllwRegToReg128Immed		( BYTE** code, int Dest, int Src, BYTE Immed );
 void AvxVPSradRegToReg256Immed		( BYTE** code, int Dest, int Src, BYTE Immed );
 void AvxVPSrawRegToReg128Immed      ( BYTE** code, int Dest, int Src, BYTE Immed );
 void AvxVPSrldRegToReg256Immed		( BYTE** code, int Dest, int Src, BYTE Immed );
+void AvxVPSrlwRegToReg128Immed		( BYTE** code, int Dest, int Src, BYTE Immed );
 void AvxVPxorRegToReg256			( BYTE** code, int Dest, int Src1, int Src2 );
 
 void x86_SetBranch8b(void* JumpByte, void* Destination);
