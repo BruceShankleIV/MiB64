@@ -584,7 +584,7 @@ static BOOL WriteToVectorDest2 (DWORD DestReg, int PC, BOOL RecursiveCall) {
 			case RSP_SPECIAL_XOR:
 			case RSP_SPECIAL_NOR:
 			case RSP_SPECIAL_SLT:
-			/*case RSP_SPECIAL_SLTU:*/
+			case RSP_SPECIAL_SLTU:
 				break;
 
 			case RSP_SPECIAL_BREAK:
@@ -622,7 +622,7 @@ static BOOL WriteToVectorDest2 (DWORD DestReg, int PC, BOOL RecursiveCall) {
 		case RSP_ADDI:
 		case RSP_ADDIU:
 		case RSP_SLTI:
-		/*case RSP_SLTIU:*/
+		case RSP_SLTIU:
 		case RSP_ANDI:
 		case RSP_ORI:
 		case RSP_XORI:
@@ -926,17 +926,16 @@ BOOL UseRspFlags (int flag, int PC) {
 
 		switch (RspOp.OP.I.op) {
 
-		/*case RSP_REGIMM:
-			switch (RspOp.rt) {
-			case RSP_REGIMM_BLTZ:
+		case RSP_REGIMM:
+			switch (RspOp.OP.B.rt) {
+			/*case RSP_REGIMM_BLTZ:*/
 			case RSP_REGIMM_BGEZ:
-				Instruction_State = DO_DELAY_SLOT;
 				break;
 			default:
-				CompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.Hex,PC));
+				RspCompilerWarning("Unkown opcode in UseRspFlags\n%s",RSPOpcodeName(RspOp.OP.Hex,PC));
 				return TRUE;
 			}
-			break;*/
+			break;
 		case RSP_SPECIAL:
 			switch (RspOp.OP.R.funct) {
 			case RSP_SPECIAL_SLL:
@@ -993,7 +992,7 @@ BOOL UseRspFlags (int flag, int PC) {
 				case RSP_VECTOR_VMUDL:
 				case RSP_VECTOR_VMUDM:
 				case RSP_VECTOR_VMUDN:
-				/*case RSP_VECTOR_VMUDH:*/
+				case RSP_VECTOR_VMUDH:
 					break;
 				case RSP_VECTOR_VMACF:
 				case RSP_VECTOR_VMADL:
@@ -1022,13 +1021,13 @@ BOOL UseRspFlags (int flag, int PC) {
 					}
 					break;
 
-				/*case RSP_VECTOR_VABS:				
-				case RSP_VECTOR_VAND:*/
+				/*case RSP_VECTOR_VABS:*/
+				case RSP_VECTOR_VAND:
 				case RSP_VECTOR_VOR:
 				case RSP_VECTOR_VXOR:
 				case RSP_VECTOR_VRCPH:
-				/*case RSP_VECTOR_VRSQL:
-				case RSP_VECTOR_VRSQH:*/
+				case RSP_VECTOR_VRSQL:
+				case RSP_VECTOR_VRSQH:
 				case RSP_VECTOR_VRCPL:
 				/*case RSP_VECTOR_VRCP:*/
 					break;
@@ -1215,8 +1214,10 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 			case RSP_SPECIAL_SUB:
 			case RSP_SPECIAL_AND:
 			case RSP_SPECIAL_OR:
+			case RSP_SPECIAL_XOR:
 			case RSP_SPECIAL_NOR:
 			case RSP_SPECIAL_SLT:
+			case RSP_SPECIAL_SLTU:
 				break;
 			default:
 				RspCompilerWarning("Unkown opcode in WriteToFlag\n%s", RSPOpcodeName(RspOp.OP.Hex, PC));
@@ -1259,6 +1260,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 			break;
 		case RSP_ADDI:
 		case RSP_ADDIU:
+		case RSP_SLTIU:
 		case RSP_ANDI:
 		case RSP_ORI:
 		case RSP_XORI:
