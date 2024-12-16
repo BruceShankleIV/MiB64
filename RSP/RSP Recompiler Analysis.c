@@ -1321,6 +1321,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 				case RSP_VECTOR_VAND:
 				case RSP_VECTOR_VOR:
 				case RSP_VECTOR_VXOR:
+				case RSP_VECTOR_VNXOR:
 				case RSP_VECTOR_VRCP:
 				case RSP_VECTOR_VRCPL:
 				case RSP_VECTOR_VRCPH:
