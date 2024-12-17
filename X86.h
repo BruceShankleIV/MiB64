@@ -414,6 +414,7 @@ void Sse2PaddswRegToReg				( BYTE** code, int Dest, int Source );
 void Sse2PadduswRegToReg			( BYTE** code, int Dest, int Source );
 void Sse2PaddwRegToReg				( BYTE** code, int Dest, int Source );
 void Sse2PandVariableToReg			( BYTE** code, int Dest, void * Variable, char * VariableName );
+void Sse2PandnVariableToReg			( BYTE** code, int Dest, void * Variable, char * VariableName );
 void Sse2PandRegToReg				( BYTE** code, int Dest, int Source );
 void Sse2PandnRegToReg				( BYTE** code, int Dest, int Source );
 void Sse2PmulldRegToReg				( BYTE** code, int Dest, int Source );
