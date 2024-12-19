@@ -928,7 +928,7 @@ BOOL UseRspFlags (int flag, int PC) {
 
 		case RSP_REGIMM:
 			switch (RspOp.OP.B.rt) {
-			/*case RSP_REGIMM_BLTZ:*/
+			case RSP_REGIMM_BLTZ:
 			case RSP_REGIMM_BGEZ:
 				break;
 			default:
@@ -1021,7 +1021,7 @@ BOOL UseRspFlags (int flag, int PC) {
 					}
 					break;
 
-				/*case RSP_VECTOR_VABS:*/
+				case RSP_VECTOR_VABS:
 				case RSP_VECTOR_VAND:
 				case RSP_VECTOR_VOR:
 				case RSP_VECTOR_VXOR:
@@ -1372,6 +1372,7 @@ static BOOL WriteToFlag2(int flag, int PC, BOOL RecursiveCall) {
 				}
 			}
 			break;
+		case RSP_LB:
 		case RSP_LH:
 		case RSP_LW:
 		case RSP_LBU:
