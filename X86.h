@@ -377,7 +377,7 @@ void MmxPaddwRegToReg				( BYTE** code, int Dest, int Source );
 void MmxPackSignedDwords			( BYTE** code, int Dest, int Source );
 void MmxUnpackLowWord				( BYTE** code, int Dest, int Source );
 void MmxUnpackHighWord				( BYTE** code, int Dest, int Source );
-/*void MmxCompareGreaterWordRegToReg(int Dest, int Source);*/
+void MmxCompareGreaterWordRegToReg	( BYTE** code, int Dest, int Source );
 void MmxCompareEqualWordRegToReg	( BYTE** code, int Dest, int Source );
 void MmxEmptyMultimediaState		( BYTE** code );
 

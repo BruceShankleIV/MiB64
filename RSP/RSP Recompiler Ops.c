@@ -10009,46 +10009,57 @@ void CompileRsp_Vector_VNE ( void ) {
 	}
 }
 
-/*BOOL Compile_Vector_VGE_MMX(void) {
+BOOL Compile_Vector_VGE_MMX(BOOL writeToLessFlag, BOOL writeToCarryFlag, BOOL writeToNeqFlag) {
 	char Reg[256];
 
-	if ((RSPOpC.rs & 0xF) >= 2 && (RSPOpC.rs & 0xF) <= 7 && IsMmx2Enabled == FALSE)
+	if (IsMmxEnabled == FALSE)
+		return FALSE;
+	if ((RSPOpC.OP.V.element & 0xF) >= 2 && (RSPOpC.OP.V.element & 0xF) <= 7 && IsMmx2Enabled == FALSE)
 		return FALSE;
 
-	CPU_Message("  %X %s",CompilePC,RSPOpcodeName(RSPOpC.Hex,CompilePC));
-	MoveConstToVariable(0, &RSP_Flags[1].UW, "RSP_Flags[1].UW");
+	if (writeToLessFlag == TRUE) {
+		MoveConstToVariable(&RspRecompPos, 0, &RspVCC, "RspVCC");
+	}
 
-	sprintf(Reg, "RSP_Vect[%i].HW[0]", RSPOpC.rd);
-	MmxMoveQwordVariableToReg(x86_MM0, &RSP_Vect[RSPOpC.rd].HW[0], Reg);
-	sprintf(Reg, "RSP_Vect[%i].HW[4]", RSPOpC.rd);
-	MmxMoveQwordVariableToReg(x86_MM1, &RSP_Vect[RSPOpC.rd].HW[4], Reg);
-	MmxMoveRegToReg(x86_MM2, x86_MM0);
-	MmxMoveRegToReg(x86_MM3, x86_MM1);
+	sprintf(Reg, "RSP_Vect[%i].HW[0]", RSPOpC.OP.V.vs);
+	MmxMoveQwordVariableToReg(&RspRecompPos, x86_MM0, &RSP_Vect[RSPOpC.OP.V.vs].HW[0], Reg);
+	sprintf(Reg, "RSP_Vect[%i].HW[4]", RSPOpC.OP.V.vs);
+	MmxMoveQwordVariableToReg(&RspRecompPos, x86_MM1, &RSP_Vect[RSPOpC.OP.V.vs].HW[4], Reg);
+	MmxMoveRegToReg(&RspRecompPos, x86_MM2, x86_MM0);
+	MmxMoveRegToReg(&RspRecompPos, x86_MM3, x86_MM1);
 
-	if ((RSPOpC.rs & 0x0f) < 2) {
-		sprintf(Reg, "RSP_Vect[%i].HW[0]", RSPOpC.rt);
-		MmxMoveQwordVariableToReg(x86_MM4, &RSP_Vect[RSPOpC.rt].HW[0], Reg);
-		sprintf(Reg, "RSP_Vect[%i].HW[4]", RSPOpC.rt);
-		MmxMoveQwordVariableToReg(x86_MM5, &RSP_Vect[RSPOpC.rt].HW[4], Reg);
-	} else if ((RSPOpC.rs & 0x0f) >= 8) {
+	if ((RSPOpC.OP.V.element & 0x0f) < 2) {
+		sprintf(Reg, "RSP_Vect[%i].HW[0]", RSPOpC.OP.V.vt);
+		MmxMoveQwordVariableToReg(&RspRecompPos, x86_MM4, &RSP_Vect[RSPOpC.OP.V.vt].HW[0], Reg);
+		sprintf(Reg, "RSP_Vect[%i].HW[4]", RSPOpC.OP.V.vt);
+		MmxMoveQwordVariableToReg(&RspRecompPos, x86_MM5, &RSP_Vect[RSPOpC.OP.V.vt].HW[4], Reg);
+	} else if ((RSPOpC.OP.V.element & 0x0f) >= 8) {
 		RSP_Element2Mmx(x86_MM4);
 	} else {
 		RSP_MultiElement2Mmx(x86_MM4, x86_MM5);
 	}
 
-	MmxCompareGreaterWordRegToReg(x86_MM2, x86_MM4);
-	MmxCompareGreaterWordRegToReg(x86_MM3, ((RSPOpC.rs & 0x0f) >= 8) ? x86_MM4 : x86_MM5);
+	MmxCompareGreaterWordRegToReg(&RspRecompPos, x86_MM2, x86_MM4);
+	MmxCompareGreaterWordRegToReg(&RspRecompPos, x86_MM3, ((RSPOpC.OP.V.element & 0x0f) >= 8) ? x86_MM4 : x86_MM5);
 
-	MmxPandRegToReg(x86_MM0, x86_MM2);
-	MmxPandRegToReg(x86_MM1, x86_MM3);
-	MmxPandnRegToReg(x86_MM2, x86_MM4);
-	MmxPandnRegToReg(x86_MM3, ((RSPOpC.rs & 0x0f) >= 8) ? x86_MM4 : x86_MM5);
+	MmxPandRegToReg(&RspRecompPos, x86_MM0, x86_MM2);
+	MmxPandRegToReg(&RspRecompPos, x86_MM1, x86_MM3);
+	MmxPandnRegToReg(&RspRecompPos, x86_MM2, x86_MM4);
+	MmxPandnRegToReg(&RspRecompPos, x86_MM3, ((RSPOpC.OP.V.element & 0x0f) >= 8) ? x86_MM4 : x86_MM5);
 
-	MmxPorRegToReg(x86_MM0, x86_MM2);
-	MmxPorRegToReg(x86_MM1, x86_MM3);
-	MoveConstToVariable(0, &RSP_Flags[0].UW, "RSP_Flags[0].UW");
+	MmxPorRegToReg(&RspRecompPos, x86_MM0, x86_MM2);
+	MmxPorRegToReg(&RspRecompPos, x86_MM1, x86_MM3);
+
+	sprintf(Reg, "RSP_Vect[%i].UHW[0]", RSPOpC.OP.V.vd);
+	MmxMoveQwordRegToVariable(&RspRecompPos, x86_MM0, &RSP_Vect[RSPOpC.OP.V.vd].UHW[0], Reg);
+	sprintf(Reg, "RSP_Vect[%i].UHW[4]", RSPOpC.OP.V.vd);
+	MmxMoveQwordRegToVariable(&RspRecompPos, x86_MM1, &RSP_Vect[RSPOpC.OP.V.vd].UHW[4], Reg);
+
+	if (writeToCarryFlag == TRUE || writeToNeqFlag == TRUE) {
+		MoveConstToVariable(&RspRecompPos, 0, &RspVCO, "RspVCO");
+	}
 	return TRUE;
-}*/
+}
 
 void CompileRsp_Vector_VGE ( void ) {
 	char Reg[256];
@@ -10071,13 +10082,13 @@ void CompileRsp_Vector_VGE ( void ) {
 
 	RSP_CPU_Message("  %X %s", RspCompilePC, RSPOpcodeName(RSPOpC.OP.Hex, RspCompilePC));
 
-	/* FIXME: works ok, but needs careful flag analysis */
-/*	#if defined (DLIST)
-	if (bWriteToAccum == FALSE && TRUE == Compile_Vector_VGE_MMX()) {
+	if (bWriteToDest == FALSE && bWriteToAccum == FALSE && bWriteToGreaterFlag == FALSE && bWriteToLessFlag == FALSE && bWriteToCarryFlag == FALSE && bWriteToNeqFlag == FALSE) {
 		return;
 	}
-	#endif
-*/
+
+	if (bWriteToAccum == FALSE && bWriteToGreaterFlag == FALSE && TRUE == Compile_Vector_VGE_MMX(bWriteToLessFlag, bWriteToCarryFlag, bWriteToNeqFlag)) {
+		return;
+	}
 
 	if (bWriteToGreaterFlag == TRUE) {
 		XorX86RegToX86Reg(&RspRecompPos, x86_ECX, x86_ECX);
