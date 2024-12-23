@@ -10180,6 +10180,93 @@ static BOOL Compile_Vector_VGE_SSE2(BOOL writeToVectorDest, BOOL writeToAccum, B
 	return TRUE;
 }
 
+static BOOL Compile_Vector_VGE_AVX(BOOL writeToVectorDest, BOOL writeToAccum, BOOL writeToGreaterFlag, BOOL writeToLessFlag, BOOL writeToCarryFlag, BOOL writeToNeqFlag,
+	BOOL carryFlagUseage, BOOL neqFlagUseage) {
+	char Reg[256];
+	static VECTOR VCCGreaterFlagMask;
+	static VECTOR VCOFlagMask;
+	static BOOL constInitialized = FALSE;
+
+	if (!constInitialized) {
+		for (int i = 0; i < 8; ++i) {
+			VCCGreaterFlagMask.UHW[i] = 1 << (7 - i);
+			VCOFlagMask.UHW[i] = (VCCGreaterFlagMask.UHW[i] << 8) | VCCGreaterFlagMask.UHW[i];
+		}
+		constInitialized = TRUE;
+	}
+
+	/* Do our AVX checks here */
+	if (IsAvxEnabled == FALSE || IsSseEnabled == FALSE || IsSse2Enabled == FALSE)
+		return FALSE;
+
+	// load vs and vt
+	sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vs);
+	SseMoveAlignedVariableToReg(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vs].HW[0], Reg, x86_XMM0, SseType_QuadWord, TRUE);
+
+	if ((RSPOpC.OP.V.element & 0xF) < 2) {
+		sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vt);
+		SseMoveAlignedVariableToReg(&RspRecompPos, &RSP_Vect[RSPOpC.OP.V.vt].UHW[0], Reg, x86_XMM1, SseType_QuadWord, TRUE);
+	}
+	else if ((RSPOpC.OP.V.element & 0xF) >= 8) {
+		RSP_Element2Sse(x86_XMM1);
+	}
+	else {
+		RSP_MultiElement2Sse(x86_XMM1);
+	}
+
+	if (writeToVectorDest == TRUE || writeToAccum == TRUE) {
+		AvxCompareGreaterWordRegToReg128(&RspRecompPos, x86_XMM2, x86_XMM1, x86_XMM0);
+		AvxVPBlendvbRegToReg128(&RspRecompPos, x86_XMM3, x86_XMM0, x86_XMM1, x86_XMM2);
+	}
+
+	if (writeToVectorDest == TRUE) {
+		sprintf(Reg, "RSP_Vect[%i]", RSPOpC.OP.V.vd);
+		SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM3, &RSP_Vect[RSPOpC.OP.V.vd].UHW[0], Reg, SseType_QuadWord, TRUE);
+	}
+
+	if (writeToAccum == TRUE) {
+		SseMoveAlignedRegToVariable(&RspRecompPos, x86_XMM3, &RSP_ACCUM_LOW.UHW[0], "RSP_ACCUM_LOW", SseType_QuadWord, TRUE);
+	}
+
+	if (writeToGreaterFlag == TRUE) {
+		AvxCompareGreaterWordRegToReg128(&RspRecompPos, x86_XMM2, x86_XMM0, x86_XMM1);
+		Sse2PandVariableToReg(&RspRecompPos, x86_XMM2, &VCCGreaterFlagMask, "VCCGreaterFlagMask");
+
+		if (carryFlagUseage == TRUE || neqFlagUseage == TRUE) {
+			AvxCompareEqualWordRegToReg128(&RspRecompPos, x86_XMM3, x86_XMM0, x86_XMM1);
+			Sse2PandVariableToReg(&RspRecompPos, x86_XMM3, &VCOFlagMask, "VCOFlagMask");
+			AvxVPSrlwRegToReg128Immed(&RspRecompPos, x86_XMM4, x86_XMM3, 8);
+			AvxVPBroadcastwVariableToReg128(&RspRecompPos, x86_XMM5, &RspVCO, "VCO");
+			Sse2PandRegToReg(&RspRecompPos, x86_XMM3, x86_XMM5);
+			AvxVPSrlwRegToReg128Immed(&RspRecompPos, x86_XMM6, x86_XMM3, 8);
+			Sse2PandRegToReg(&RspRecompPos, x86_XMM3, x86_XMM6);
+			Sse2PxorRegToReg(&RspRecompPos, x86_XMM3, x86_XMM4);
+			Sse2PorRegToReg(&RspRecompPos, x86_XMM2, x86_XMM3);
+		}
+		else {
+			AvxCompareEqualWordRegToReg128(&RspRecompPos, x86_XMM3, x86_XMM0, x86_XMM1);
+			Sse2PandVariableToReg(&RspRecompPos, x86_XMM3, &VCCGreaterFlagMask, "VCCGreaterFlagMask");
+			Sse2PorRegToReg(&RspRecompPos, x86_XMM2, x86_XMM3);
+		}
+
+		Ssse3PHorizontalAddRegToReg(&RspRecompPos, x86_XMM2, x86_XMM2);
+		Ssse3PHorizontalAddRegToReg(&RspRecompPos, x86_XMM2, x86_XMM2);
+		Ssse3PHorizontalAddRegToReg(&RspRecompPos, x86_XMM2, x86_XMM2);
+
+		Sse2MoveRegToDWordReg(&RspRecompPos, x86_EAX, x86_XMM2);
+		MoveX86regToVariable(&RspRecompPos, x86_EAX, &RspVCC, "RspVCC");
+	}
+	else if (writeToLessFlag == TRUE) {
+		MoveConstToVariable(&RspRecompPos, 0, &RspVCC, "RspVCC");
+	}
+
+	if (writeToCarryFlag == TRUE || writeToNeqFlag == TRUE) {
+		MoveConstToVariable(&RspRecompPos, 0, &RspVCO, "RspVCO");
+	}
+
+	return TRUE;
+}
+
 void CompileRsp_Vector_VGE ( void ) {
 	char Reg[256];
 	int count, el, del;
@@ -10202,6 +10289,10 @@ void CompileRsp_Vector_VGE ( void ) {
 	RSP_CPU_Message("  %X %s", RspCompilePC, RSPOpcodeName(RSPOpC.OP.Hex, RspCompilePC));
 
 	if (bWriteToDest == FALSE && bWriteToAccum == FALSE && bWriteToGreaterFlag == FALSE && bWriteToLessFlag == FALSE && bWriteToCarryFlag == FALSE && bWriteToNeqFlag == FALSE) {
+		return;
+	}
+
+	if (TRUE == Compile_Vector_VGE_AVX(bWriteToDest, bWriteToAccum, bWriteToGreaterFlag, bWriteToLessFlag, bWriteToCarryFlag, bWriteToNeqFlag, bCarryFlagUseage, bNeqFlagUseage)) {
 		return;
 	}
 
